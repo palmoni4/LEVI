@@ -1,0 +1,40 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Code Block Styling */
+pre {
+  @apply bg-gray-900 text-white rounded-lg p-4 my-4 overflow-x-auto relative;
+  direction: ltr;
+}
+
+pre code {
+  @apply font-mono text-sm leading-relaxed whitespace-pre;
+  tab-size: 2;
+}
+
+.copy-button {
+  @apply absolute top-2 right-2 bg-gray-800 text-gray-300 hover:text-white p-2 rounded-md transition-colors;
+}
+
+/* Chat History Styling */
+.history-item {
+  @apply p-4 border-b hover:bg-gray-50 cursor-pointer transition-colors;
+}
+
+.history-item:last-child {
+  @apply border-b-0;
+}
+
+.history-title {
+  @apply font-medium text-gray-900 mb-1;
+}
+
+.history-preview {
+  @apply text-sm text-gray-500 line-clamp-2;
+}
+
+/* Search Input Styling */
+.search-input {
+  @apply w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent;
+}
