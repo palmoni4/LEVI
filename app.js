@@ -6,7 +6,7 @@ class GeminiClone {
         this.currentModel = localStorage.getItem('gemini-model') || 'gemini-2.0-flash-exp';
         this.settings = JSON.parse(localStorage.getItem('gemini-settings') || JSON.stringify({
             temperature: 0.7,
-            maxTokens: 2048,
+            maxTokens: 4096,
             topP: 0.95,
             topK: 40,
             streamResponse: true,
