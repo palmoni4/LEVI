@@ -35,18 +35,87 @@ function App() {
         setMessages((prev) => [...prev, userMsg]);
         setInput('');
 
-        // Mock response from the model
+        // Mock responses from the model for testing
         setTimeout(() => {
-            const assistantMsg: Message = {
-                id: Date.now() + 1,
-                role: 'assistant',
-                content: 'Here is an example code:',
-                code: {
-                    code: `function helloWorld() {\n  console.log("Hello, world!");\n}`,
-                    language: 'javascript',
+            const testMessages: Message[] = [
+                {
+                    id: Date.now() + 1,
+                    role: 'assistant',
+                    content: 'Test 1: Standard multi-line code with \n and indentation:',
+                    code: {
+                        code: "function greet(name) {\n  console.log(\"Hello, \" + name + \"!\");\n}\ngreet(\"World\");",
+                        language: 'javascript',
+                    },
                 },
-            };
-            setMessages((prev) => [...prev, assistantMsg]);
+                {
+                    id: Date.now() + 2,
+                    role: 'assistant',
+                    content: 'Test 2: Very long single line of code:',
+                    code: {
+                        code: "console.log(\"This is a very long line of JavaScript code that should ideally cause horizontal scrolling if white-space: pre is active and overflow-x: auto is also active on a parent element, which we expect to be the case.\");",
+                        language: 'javascript',
+                    },
+                },
+                {
+                    id: Date.now() + 3,
+                    role: 'assistant',
+                    content: 'Test 3: Code with mixed line breaks (CRLF and CR) - testing sanitization:',
+                    code: {
+                        // Input with \r\n and \r
+                        code: "const a = 1;\r\nconst b = 2;\rconst c = 3;",
+                        language: 'javascript',
+                    },
+                },
+                {
+                    id: Date.now() + 4,
+                    role: 'assistant',
+                    content: 'Test 4: Empty code string:',
+                    code: {
+                        code: "",
+                        language: 'text',
+                    },
+                },
+                {
+                    id: Date.now() + 5,
+                    role: 'assistant',
+                    content: 'Test 5: Message with code.code as null (should be caught by || \"\" or conditional render):',
+                    code: {
+                        code: null, // This will be replaced by `|| ""` due to Step 1's change
+                        language: 'text',
+                    },
+                },
+                {
+                    id: Date.now() + 6,
+                    role: 'assistant',
+                    content: 'Test 6: Message with undefined code.code (should be caught by || \"\" or conditional render):',
+                    code: {
+                        code: undefined, // This will be replaced by `|| ""` due to Step 1's change
+                        language: 'text',
+                    },
+                },
+                 {
+                    id: Date.now() + 7,
+                    role: 'assistant',
+                    content: 'Test 7: No code block property at all.'
+                    // No code property here
+                }
+            ];
+
+            // Apply sanitization to Test 3's code
+            if (testMessages[2].code && testMessages[2].code.code) {
+                let rawCode = testMessages[2].code.code;
+                // Using RegExp constructor for explicit backslash escaping
+                testMessages[2].code.code = rawCode.replace(new RegExp('\\r\\n|\\r', 'g'), '\n');
+            }
+
+            // Ensure all code.code fields are strings (as per Step 1 logic, applying it here directly for clarity)
+            testMessages.forEach(msg => {
+                if (msg.code) {
+                    msg.code.code = msg.code.code || "";
+                }
+            });
+
+            setMessages((prev) => [...prev, ...testMessages]);
         }, 800);
     };
 
