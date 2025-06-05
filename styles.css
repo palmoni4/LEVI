@@ -788,11 +788,12 @@ body {
 }
 
 .gemini-logo {
-    position: fixed;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0 auto;
     top: 40px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 1001; /* גבוה יותר מה-top-bar */
+    z-index: 1001;
     margin-bottom: 0;
 }
 
