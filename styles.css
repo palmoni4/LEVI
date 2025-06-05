@@ -788,7 +788,12 @@ body {
 }
 
 .gemini-logo {
-    margin-bottom: 40px;
+    position: fixed;
+    top: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1001; /* גבוה יותר מה-top-bar */
+    margin-bottom: 0;
 }
 
 .logo-animation {
