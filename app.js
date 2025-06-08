@@ -1046,7 +1046,7 @@ class GeminiClone {
 
     shareChat() {
         if (!this.currentChatId) {
-            this.showToast('אין צ\'אט לשיתוף', 'error');
+            this.showToast('אין צ\'אט להעתקה', 'error');
             return;
         }
         
