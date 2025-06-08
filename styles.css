@@ -53,7 +53,7 @@
 .animated-dots .dot {
     width: 8px;
     height: 8px;
-    background-color: var(--accent-color);
+    background-color: #0000FF;
     border-radius: 50%;
     animation: dot-bounce 1.4s infinite ease-in-out;
 }
