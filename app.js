@@ -3,7 +3,7 @@ class GeminiClone {
         this.currentChatId = null;
         this.chats = JSON.parse(localStorage.getItem('gemini-chats') || '{}');
         this.apiKey = localStorage.getItem('gemini-api-key') || '';
-        this.currentModel = localStorage.getItem('gemini-model') || 'gemini-2.0-flash-exp';
+        this.currentModel = localStorage.getItem('gemini-model') || 'gemini-2.5-flash-preview-05-20';
         this.settings = JSON.parse(localStorage.getItem('gemini-settings') || JSON.stringify({
             temperature: 0.7,
             maxTokens: 4096,
