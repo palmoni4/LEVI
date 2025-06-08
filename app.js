@@ -438,7 +438,7 @@ class GeminiClone {
 
     updateCharCount() {
         const length = this.messageInput.value.length;
-        this.charCount.textContent = `${length}/8000`;
+        this.charCount.textContent = `${length}`;
         this.sendBtn.disabled = length === 0 || this.isLoading;
         if (length > 7000) {
             this.charCount.style.color = 'var(--accent-color)';
