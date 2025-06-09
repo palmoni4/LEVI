@@ -154,6 +154,25 @@ class GeminiClone {
         if (!this.historySearch) return;
 
         const query = this.historySearch.value.trim().toLowerCase();
+        const chatArray = Object.values(this.chats);
+
+        const results = chatArray.filter(chat =>
+            chat.title?.toLowerCase().includes(query) ||
+            chat.systemPrompt?.toLowerCase().includes(query) ||
+            chat.messages?.some(msg => msg.content.toLowerCase().includes(query))
+        );
+
+        const historyHeader = document.querySelector('.history-header');
+        if (query) {
+            if (historyHeader) historyHeader.style.display = 'none';
+        } else {
+            if (historyHeader) historyHeader.style.display = 'flex';
+        }
+
+        if (results.length === 0) {
+            this.chatHistory.innerHTML = `<div class="no-results">לא נמצאו תוצאות עבור "<strong>${query}</strong>"</div>`;
+            return;
+        }
 
         const highlight = (text) => {
             if (!query) return text;
@@ -161,22 +180,8 @@ class GeminiClone {
             return text.replace(regex, '<mark>$1</mark>');
         };
 
-        const sortedChats = Object.values(this.chats)
-            .filter(chat =>
-                chat.title?.toLowerCase().includes(query) ||
-                chat.systemPrompt?.toLowerCase().includes(query) ||
-                chat.messages?.some(msg => msg.content.toLowerCase().includes(query))
-            )
-            .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
-
-        if (sortedChats.length === 0) {
-            this.chatHistory.innerHTML = `<div class="no-results">לא נמצאו תוצאות עבור "<strong>${query}</strong>"</div>`;
-            return;
-        }
-
-        this.chatHistory.innerHTML = sortedChats.map(chat => `
-            <div class="history-item ${chat.id === this.currentChatId ? 'active' : ''}" 
-                data-chat-id="${chat.id}">
+        this.chatHistory.innerHTML = results.map(chat => `
+            <div class="history-item ${chat.id === this.currentChatId ? 'active' : ''}" data-chat-id="${chat.id}">
                 <div class="history-item-title">${highlight(chat.title)}</div>
                 <div class="history-item-preview">${highlight(this.getChatSummary(chat))}</div>
                 <button class="delete-chat-btn" data-chat-id="${chat.id}" title="מחק צ'אט">
@@ -187,6 +192,7 @@ class GeminiClone {
 
         this.bindChatHistoryEvents();
     }
+
 
 
     bindChatHistoryEvents() {
@@ -1193,12 +1199,23 @@ class GeminiClone {
 
 
     renderChatHistory() {
-        const sortedChats = Object.values(this.chats)
-            .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
-    
+        const chatArray = Object.values(this.chats);
+        const historyHeader = document.querySelector('.history-header');
+        const searchWrapper = document.querySelector('.search-wrapper');
+
+        if (chatArray.length === 0) {
+            if (historyHeader) historyHeader.style.display = 'none';
+            if (searchWrapper) searchWrapper.style.display = 'none';
+            this.chatHistory.innerHTML = `<div class="no-results">אין היסטוריה להצגה</div>`;
+            return;
+        }
+
+        if (historyHeader) historyHeader.style.display = 'flex';
+        if (searchWrapper) searchWrapper.style.display = 'block';
+
+        const sortedChats = chatArray.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
         this.chatHistory.innerHTML = sortedChats.map(chat => `
-            <div class="history-item ${chat.id === this.currentChatId ? 'active' : ''}" 
-                data-chat-id="${chat.id}">
+            <div class="history-item ${chat.id === this.currentChatId ? 'active' : ''}" data-chat-id="${chat.id}">
                 <div class="history-item-title">${chat.title}</div>
                 <div class="history-item-preview">${this.getChatSummary(chat)}</div>
                 <button class="delete-chat-btn" data-chat-id="${chat.id}" title="מחק צ'אט">
@@ -1206,9 +1223,11 @@ class GeminiClone {
                 </button>
             </div>
         `).join('');
-    
+
         this.bindChatHistoryEvents();
     }
+
+
 
     getChatSummary(chat) {
         if (!chat.messages || chat.messages.length === 0) return 'שיחה חדשה';

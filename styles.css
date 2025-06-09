@@ -31,6 +31,15 @@
     line-height: 1.2;
 }
 
+#historyList {
+    margin-top: 12px;
+}
+
+.search-wrapper + .chat-history {
+    margin-top: 12px;
+}
+
+
 mark {
     background-color: yellow;
     padding: 0 2px;
@@ -41,6 +50,7 @@ mark {
     text-align: center;
     color: #999;
 }
+
 
 
 /* Add to styles.css under .animated-dots */
@@ -1890,4 +1900,53 @@ body {
     .main-content.history-collapsed {
         margin-left: 0;
     }
+}
+.search-wrapper {
+    margin-top: 12px;
+}
+
+.sidebar-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 20px;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--glass-effect);
+    position: relative;
+}
+
+.sidebar-header .clear-history-btn {
+    margin-right: auto;
+    background: none;
+    border: none;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    padding: 8px;
+    border-radius: var(--border-radius-small);
+    transition: var(--transition);
+}
+
+.sidebar-header .clear-history-btn:hover {
+    background: var(--hover-color);
+    color: var(--accent-color);
+}
+.history-tools {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 8px;
+}
+
+.clear-history-btn {
+    background: none;
+    border: none;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    padding: 8px;
+    border-radius: var(--border-radius-small);
+    transition: var(--transition);
+}
+
+.clear-history-btn:hover {
+    background: var(--hover-color);
+    color: var(--accent-color);
 }
