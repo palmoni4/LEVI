@@ -42,6 +42,47 @@ class GeminiClone {
         });
     }
 
+    deleteMessage(messageId) {
+        if (!this.currentChatId) return;
+        
+        const messages = this.chats[this.currentChatId].messages;
+        const messageIndex = messages.findIndex(msg => msg.id === messageId);
+        
+        if (messageIndex !== -1) {
+            // If deleting user message, also delete the assistant's response
+            if (messages[messageIndex].role === 'user' && messageIndex + 1 < messages.length && 
+                messages[messageIndex + 1].role === 'assistant') {
+                messages.splice(messageIndex, 2);
+            } else {
+                messages.splice(messageIndex, 1);
+            }
+            
+            this.saveChatData();
+            this.renderMessages();
+            this.showToast('ההודעה נמחקה', 'success');
+        }
+    }
+
+    showToast(message, type = 'success', options = {}) {
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.innerHTML = `
+            <span class="material-icons">${type === 'success' ? 'check_circle' : 'error'}</span>
+            <span>${message}</span>
+            ${options.action ? `<button class="undo-btn">${options.action.text}</button>` : ''}
+        `;
+        this.toastContainer.appendChild(toast);
+    
+        if (options.action) {
+            toast.querySelector('.undo-btn').onclick = options.action.callback;
+        }
+    
+        setTimeout(() => {
+            toast.style.animation = 'toastSlideUp 0.3s ease-out forwards';
+            setTimeout(() => toast.remove(), 300);
+        }, 5000);
+    }
+
     initializeElements() {
         // Main UI elements
         this.sidebar = document.getElementById('sidebar');
@@ -55,6 +96,7 @@ class GeminiClone {
         this.exportDropdownBtn = document.getElementById('exportDropdownBtn');
         this.exportDropdownContent = document.getElementById('exportDropdownContent');
         this.hideLoadingOverlayCheckbox = document.getElementById('hideLoadingOverlay');
+        this.historySearch = document.getElementById('historySearch');
         
         // API & Model Settings
         this.geminiApiKey = document.getElementById('geminiApiKey');
@@ -108,6 +150,64 @@ class GeminiClone {
         this.includeSystemPromptsCheckbox = document.getElementById('includeSystemPrompts');
     }
 
+    filterChatHistory() {
+        if (!this.historySearch) return;
+
+        const query = this.historySearch.value.trim().toLowerCase();
+
+        const highlight = (text) => {
+            if (!query) return text;
+            const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+            return text.replace(regex, '<mark>$1</mark>');
+        };
+
+        const sortedChats = Object.values(this.chats)
+            .filter(chat =>
+                chat.title?.toLowerCase().includes(query) ||
+                chat.systemPrompt?.toLowerCase().includes(query) ||
+                chat.messages?.some(msg => msg.content.toLowerCase().includes(query))
+            )
+            .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+
+        if (sortedChats.length === 0) {
+            this.chatHistory.innerHTML = `<div class="no-results">לא נמצאו תוצאות עבור "<strong>${query}</strong>"</div>`;
+            return;
+        }
+
+        this.chatHistory.innerHTML = sortedChats.map(chat => `
+            <div class="history-item ${chat.id === this.currentChatId ? 'active' : ''}" 
+                data-chat-id="${chat.id}">
+                <div class="history-item-title">${highlight(chat.title)}</div>
+                <div class="history-item-preview">${highlight(this.getChatSummary(chat))}</div>
+                <button class="delete-chat-btn" data-chat-id="${chat.id}" title="מחק צ'אט">
+                    <span class="material-icons">delete</span>
+                </button>
+            </div>
+        `).join('');
+
+        this.bindChatHistoryEvents();
+    }
+
+
+    bindChatHistoryEvents() {
+        document.querySelectorAll('.history-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                if (!e.target.closest('.delete-chat-btn')) {
+                    const chatId = item.getAttribute('data-chat-id');
+                    this.loadChat(chatId);
+                }
+            });
+        });
+    
+        document.querySelectorAll('.delete-chat-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const chatId = btn.getAttribute('data-chat-id');
+                this.deleteChat(chatId);
+            });
+        });
+    }
+
     bindEvents() {
         // Sidebar controls
         this.sidebarToggle.addEventListener('click', () => this.toggleSidebar());
@@ -117,6 +217,23 @@ class GeminiClone {
         this.clearHistoryBtn.addEventListener('click', () => this.clearHistory());
         this.exportBtn.addEventListener('click', () => this.showExportModal());
         this.hideLoadingOverlayCheckbox.addEventListener('change', (e) => this.updateHideLoadingOverlay(e.target.checked));
+
+        // History search
+        if (this.historySearch) {
+            this.historySearch.addEventListener('input', () => this.filterChatHistory());
+        } else {
+            console.warn('historySearch element not found');
+        }
+
+        const clearSearchBtn = document.getElementById('clearSearch');
+        if (clearSearchBtn) {
+            clearSearchBtn.addEventListener('click', () => {
+                this.historySearch.value = '';
+                this.filterChatHistory();
+            });
+        }
+
+
         
         // Settings controls
         this.geminiApiKey.addEventListener('input', (e) => this.saveApiKey(e.target.value));
@@ -205,6 +322,13 @@ class GeminiClone {
             this.inputWrapper().classList.remove('dragover');
             this.handleDropFiles(e.dataTransfer.files);
         });
+        
+        // History search
+        if (this.historySearch) {
+            this.historySearch.addEventListener('input', () => this.filterChatHistory());
+        } else {
+            console.warn('historySearch element not found');
+        }
     }
 
     inputWrapper() {
@@ -1067,62 +1191,23 @@ class GeminiClone {
         }
     }
 
-    deleteMessage(messageId) {
-        if (!this.currentChatId) return;
-        
-        const messages = this.chats[this.currentChatId].messages;
-        const messageIndex = messages.findIndex(msg => msg.id === messageId);
-        
-        if (messageIndex !== -1) {
-            // If deleting user message, also delete the assistant's response
-            if (messages[messageIndex].role === 'user' && messageIndex + 1 < messages.length && 
-                messages[messageIndex + 1].role === 'assistant') {
-                messages.splice(messageIndex, 2);
-            } else {
-                messages.splice(messageIndex, 1);
-            }
-            
-            this.saveChatData();
-            this.renderMessages();
-            this.showToast('ההודעה נמחקה', 'success');
-        }
-    }
 
     renderChatHistory() {
         const sortedChats = Object.values(this.chats)
             .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
-        
+    
         this.chatHistory.innerHTML = sortedChats.map(chat => `
             <div class="history-item ${chat.id === this.currentChatId ? 'active' : ''}" 
-                 data-chat-id="${chat.id}">
+                data-chat-id="${chat.id}">
                 <div class="history-item-title">${chat.title}</div>
-                <div class="history-item-preview">
-                    ${this.getChatSummary(chat)}
-                </div>
+                <div class="history-item-preview">${this.getChatSummary(chat)}</div>
                 <button class="delete-chat-btn" data-chat-id="${chat.id}" title="מחק צ'אט">
                     <span class="material-icons">delete</span>
                 </button>
             </div>
         `).join('');
-        
-        // Add event listeners for chat items
-        document.querySelectorAll('.history-item').forEach(item => {
-            item.addEventListener('click', (e) => {
-                if (!e.target.closest('.delete-chat-btn')) {
-                    const chatId = item.getAttribute('data-chat-id');
-                    this.loadChat(chatId);
-                }
-            });
-        });
-        
-        // Add event listeners for delete buttons
-        document.querySelectorAll('.delete-chat-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const chatId = btn.getAttribute('data-chat-id');
-                this.deleteChat(chatId);
-            });
-        });
+    
+        this.bindChatHistoryEvents();
     }
 
     getChatSummary(chat) {
@@ -1147,22 +1232,46 @@ class GeminiClone {
     }
 
     deleteChat(chatId) {
-        if (confirm('האם אתה בטוח שברצונך למחוק את הצ\'אט הזה?')) {
-            delete this.chats[chatId];
-            this.saveChatData();
-            
-            // If deleted the current chat, show welcome screen
-            if (chatId === this.currentChatId) {
-                this.currentChatId = null;
-                this.welcomeScreen.style.display = 'flex';
-                this.chatMessages.style.display = 'none';
-                this.chatMessages.classList.remove('active');
-                this.updateChatTitle('צ\'אט חדש');
-            }
-            
-            this.renderChatHistory();
-            this.showToast('הצ\'אט נמחק', 'success');
+        if (!confirm('האם אתה בטוח שברצונך למחוק את הצ\'אט הזה?')) {
+            return;
         }
+
+        const deletedChat = this.chats[chatId];
+        if (!deletedChat) {
+            console.warn('Chat not found:', chatId);
+            this.showToast('צ\'אט לא נמצא', 'error');
+            return;
+        }
+        const currentChatId = this.currentChatId;
+
+        delete this.chats[chatId];
+        this.saveChatData();
+
+        if (chatId === currentChatId) {
+            this.currentChatId = null;
+            this.welcomeScreen.style.display = 'flex';
+            this.chatMessages.style.display = 'none';
+            this.chatMessages.classList.remove('active');
+            this.updateChatTitle('צ\'אט חדש');
+        }
+
+        this.renderChatHistory();
+
+        this.showToast('הצ\'אט נמחק', 'success', {
+            action: {
+                text: 'בטל',
+                callback: () => {
+                    console.log('Restoring chat:', chatId); // דיבוג
+                    this.chats[chatId] = deletedChat;
+                    this.saveChatData();
+                    this.renderChatHistory();
+                    if (chatId === currentChatId) {
+                        this.loadChat(chatId);
+                    }
+                    this.showToast('הצ\'אט שוחזר', 'success');
+                }
+            }
+        });
     }
 
     clearHistory() {
