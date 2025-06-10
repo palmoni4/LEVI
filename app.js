@@ -1264,7 +1264,7 @@ class GeminiClone {
             message.vote = wasSelected ? null : 'like';
             this.saveChatData();
             if (!wasSelected) {
-                this.showToast('תודה על המשוב! שמחתי שאהבת!');
+                this.showToast('תודה על המשוב! אני שמח שאהבת!');
             }
             updateButtons();
         });
