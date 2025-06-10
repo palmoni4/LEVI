@@ -365,6 +365,30 @@ class GeminiClone {
         this.systemPromptInput.value = this.systemPrompt;
         this.systemPromptTemplateSelect.value = this.systemPromptTemplate;
         
+        const tokenLimitCheckbox = document.getElementById('toggleTokenLimit');
+        const tokenLimitRow = document.getElementById('maxTokensRow');
+        if (tokenLimitCheckbox && tokenLimitRow) {
+                tokenLimitCheckbox.checked = this.tokenLimitDisabled;
+
+                const applyTokenLimitState = () => {
+                        if (tokenLimitCheckbox.checked) {
+                                tokenLimitRow.classList.add('disabled');
+                                tokenLimitRow.querySelectorAll('input, select, button').forEach(el => el.disabled = true);
+                        } else {
+                                tokenLimitRow.classList.remove('disabled');
+                                tokenLimitRow.querySelectorAll('input, select, button').forEach(el => el.disabled = false);
+                        }
+                };
+
+                applyTokenLimitState();
+
+                tokenLimitCheckbox.addEventListener('change', (e) => {
+                        this.tokenLimitDisabled = e.target.checked;
+                        this.saveSettings();
+                        applyTokenLimitState();
+                });
+        }
+
         // Load advanced settings
         this.temperatureSlider.value = this.settings.temperature;
         this.maxTokensSlider.value = this.settings.maxTokens;
@@ -522,6 +546,7 @@ class GeminiClone {
 
     saveSettings() {
         localStorage.setItem('gemini-settings', JSON.stringify(this.settings));
+        localStorage.setItem('token-limit-disabled', this.tokenLimitDisabled ? 'true' : 'false');
     }
 
     toggleSidebar() {
@@ -858,7 +883,7 @@ class GeminiClone {
                     temperature: this.settings.temperature,
                     topK: this.settings.topK,
                     topP: this.settings.topP,
-                    maxOutputTokens: this.settings.maxTokens,
+                    maxOutputTokens: this.tokenLimitDisabled ? undefined : this.settings.maxTokens,
                 },
                 safetySettings: [
                     { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },

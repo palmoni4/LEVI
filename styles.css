@@ -37,6 +37,16 @@
     background-color: #f9f9f9;
 }
 
+.setting-row.disabled {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+#toggleTokenLimitLabel {
+    font-size: 0.80rem;
+    opacity: 0.5;
+}
+
 .edit-chat-title-btn {
     font-size: 18px;
     cursor: pointer;
@@ -58,6 +68,23 @@
     margin-top: 12px;
 }
 
+.setting-group.small-toggle {
+    margin-top: 10px;
+}
+
+.setting-group.small-toggle input[type="checkbox"] {
+    accent-color: black;
+    transform: scale(0.9);
+}
+
+.checkbox-label.small-label {
+    font-size: 0.80rem;
+    color: #000;
+    opacity: 0.70;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
 
 mark {
     background-color: yellow;
