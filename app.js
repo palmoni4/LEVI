@@ -231,6 +231,19 @@ class GeminiClone {
             console.warn('historySearch element not found');
         }
 
+        document.getElementById('editChatTitleBtn').addEventListener('click', () => {
+            const currentTitle = document.getElementById('chatTitle').innerText;
+            const newTitle = prompt("הזן שם חדש לצ'אט", currentTitle);
+            if (newTitle && newTitle !== currentTitle) {
+                document.getElementById('chatTitle').innerText = newTitle;
+                // עדכון שם הצ'אט במחלקה שלך
+                if (this.currentChatId && this.chats[this.currentChatId]) {
+                    this.chats[this.currentChatId].title = newTitle;
+                    this.saveChatData(); // שמירת השם החדש ב-localStorage או מאגר הנתונים
+                }
+            }
+        });
+
         const clearSearchBtn = document.getElementById('clearSearch');
         if (clearSearchBtn) {
             clearSearchBtn.addEventListener('click', () => {
