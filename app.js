@@ -13,7 +13,7 @@ class GeminiClone {
             includeChatHistory: true,
             hideLoadingOverlay: false
         }));
-        this.systemPrompt = localStorage.getItem('gemini-system-prompt'), בנוסף, בדוק תמיד את כל השיחה מתחילתה וענה על שאלת המשתמש כהמשך אליו || '';
+        this.systemPrompt = localStorage.getItem('gemini-system-prompt') || '';
         this.systemPromptTemplate = localStorage.getItem('gemini-system-prompt-template') || '';
         this.isLoading = false;
         this.isLuxuryMode = localStorage.getItem('luxury-mode') === 'true';
