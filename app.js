@@ -646,6 +646,7 @@ class GeminiClone {
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
             model: this.currentModel,
+                vote: null,
             systemPrompt: this.systemPrompt
         };
         this.saveChatData();
@@ -722,7 +723,8 @@ class GeminiClone {
                 role: 'assistant',
                 content: response,
                 timestamp: new Date().toISOString(),
-                model: this.currentModel
+                model: this.currentModel,
+                vote: null
             };
             
             this.chats[this.currentChatId].messages.push(assistantMessage);
@@ -969,6 +971,10 @@ class GeminiClone {
                         <button class="action-btn-small retry-btn" title="ענה מחדש">
                             <span class="material-icons">refresh</span>
                         </button>
+                    <div class="likes-dislikes" style="display:inline-flex; gap:6px; align-items:center; margin-right:10px;">
+                        <button class="like-btn" title="אהבתי">👍</button>
+                        <button class="dislike-btn" title="לא אהבתי">👎</button>
+                    </div>
                     ` : `
                         <button class="action-btn-small edit-btn" title="ערוך">
                             <span class="material-icons">edit</span>
@@ -1100,7 +1106,9 @@ class GeminiClone {
                     role: 'assistant',
                     content: response,
                     timestamp: new Date().toISOString(),
-                    model: this.currentModel
+                    model: this.currentModel,
+                vote: null
+
                 };
 
                 this.chats[this.currentChatId].messages.push(assistantMessage);
@@ -1185,6 +1193,65 @@ class GeminiClone {
                 e.stopPropagation();
             };
         });
+
+        // Like / Dislike buttons
+        document.querySelectorAll('.message').forEach(messageEl => {
+            const likeBtn = messageEl.querySelector('.like-btn');
+            const dislikeBtn = messageEl.querySelector('.dislike-btn');
+            const likeCountSpan = messageEl.querySelector('.like-count');
+            const dislikeCountSpan = messageEl.querySelector('.dislike-count');
+
+            if (likeBtn && dislikeBtn && likeCountSpan && dislikeCountSpan) {
+                let likeCount = 0;
+                let dislikeCount = 0;
+
+                likeBtn.addEventListener('click', () => {
+                    likeCount++;
+                    likeCountSpan.textContent = likeCount;
+                });
+
+                dislikeBtn.addEventListener('click', () => {
+                    dislikeCount++;
+                    dislikeCountSpan.textContent = dislikeCount;
+                });
+            }
+        });
+    document.querySelectorAll('.likes-dislikes').forEach(container => {
+        const likeBtn = container.querySelector('.like-btn');
+        const dislikeBtn = container.querySelector('.dislike-btn');
+        const messageEl = container.closest('.message');
+        if (!messageEl) return;
+
+        const messageId = messageEl.getAttribute('data-message-id');
+        const chat = this.chats[this.currentChatId];
+        if (!chat || !chat.messages) return;
+
+        const message = chat.messages.find(m => m.id === messageId);
+        if (!message) return;
+
+        const updateButtons = () => {
+            likeBtn.classList.toggle('active', message.vote === 'like');
+            dislikeBtn.classList.toggle('active', message.vote === 'dislike');
+        };
+
+        likeBtn.addEventListener('click', () => {
+            message.vote = message.vote === 'like' ? null : 'like';
+            this.saveChatData();
+            this.showToast('תודה על המשוב! שמחתי שאהבת!');
+            updateButtons();
+        });
+
+        dislikeBtn.addEventListener('click', () => {
+            message.vote = message.vote === 'dislike' ? null : 'dislike';
+            this.saveChatData();
+            this.showToast('תודה על המשוב! אשתדל להיות טוב');
+            updateButtons();
+        });
+
+        updateButtons();
+    });
+
+
     }
 
     editMessage(messageId) {
@@ -1635,7 +1702,7 @@ class GeminiClone {
             stopBtnInOverlay = document.createElement('button');
             stopBtnInOverlay.id = 'stopBtnInOverlay';
             stopBtnInOverlay.className = 'stop-btn stop-btn-overlay';
-            stopBtnInOverlay.innerHTML = `<span class="material-icons">stop_circle</span> עצור`;
+            stopBtnInOverlay.innerHTML = `<span class="material-icons">stop_circle</span> `;
             stopBtnInOverlay.onclick = () => this.abortGeneration();
             this.loadingOverlay.querySelector('.loading-content').appendChild(stopBtnInOverlay);
         }
@@ -1822,7 +1889,8 @@ class GeminiClone {
                     role: 'assistant',
                     content: response,
                     timestamp: new Date().toISOString(),
-                    model: this.currentModel
+                    model: this.currentModel,
+                vote: null
                 };
                 
                 this.chats[this.currentChatId].messages.push(assistantMessage);

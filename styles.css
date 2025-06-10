@@ -1969,3 +1969,32 @@ body {
     background: var(--hover-color);
     color: var(--accent-color);
 }
+
+.likes-dislikes {
+    display: inline-flex;
+    gap: 10px;
+    align-items: center;
+    margin-top: 8px;
+}
+
+.likes-dislikes button {
+    background: none;
+    border: none;
+    font-size: 1.4rem;
+    cursor: pointer;
+    color: transparent; /* האמוג'י הופך "ריק" */
+    text-shadow: 0 0 0 gray; /* נותן אפקט של אייקון חלול */
+    transition: transform 0.2s, color 0.2s, text-shadow 0.2s;
+    opacity: 0.5;
+}
+
+.likes-dislikes button:hover {
+    transform: scale(1.1);
+    opacity: 0.8;
+}
+
+.likes-dislikes button.active {
+    color: var(--accent-color, #f7b500); /* ברירת מחדל: זהב */
+    text-shadow: none;
+    opacity: 1;
+}
