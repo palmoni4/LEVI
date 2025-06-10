@@ -4,16 +4,17 @@ class GeminiClone {
         this.chats = JSON.parse(localStorage.getItem('gemini-chats') || '{}');
         this.apiKey = localStorage.getItem('gemini-api-key') || '';
         this.currentModel = localStorage.getItem('gemini-model') || 'gemini-2.5-flash-preview-05-20';
+        this.chatHistoryEnabled = localStorage.getItem('chatHistoryEnabled') === 'true';
         this.settings = JSON.parse(localStorage.getItem('gemini-settings') || JSON.stringify({
             temperature: 0.7,
             maxTokens: 4096,
             topP: 0.95,
             topK: 40,
             streamResponse: true,
-            includeChatHistory: true,
+            includeChatHistory: false,
             hideLoadingOverlay: false
         }));
-        this.CONSTANT_SYSTEM_PROMPT ='שמור תמיד על רצף בשיחה, ובכל תשובה קח בחשבון את כל השיחה מתחילתה.'
+        this.CONSTANT_SYSTEM_PROMPT ='שמור תמיד על רצף בשיחה, ובכל תשובה קח בחשבון את כל השיחה מתחילתה. ואם יש לך גישה להיסטוריה, גש לשיחה עם המידע המעובד מכל ההיסטוריה'
         this.systemPrompt = localStorage.getItem('gemini-system-prompt') || '';
         this.systemPromptTemplate = localStorage.getItem('gemini-system-prompt-template') || '';
         this.isLoading = false;
@@ -389,6 +390,16 @@ class GeminiClone {
                 });
         }
 
+        const historyCheckbox = document.getElementById('enableChatHistory');
+        if (historyCheckbox) {
+            historyCheckbox.checked = this.chatHistoryEnabled;
+
+            historyCheckbox.addEventListener('change', (e) => {
+                this.chatHistoryEnabled = e.target.checked;
+                this.saveSettings();
+            });
+        }
+
         // Load advanced settings
         this.temperatureSlider.value = this.settings.temperature;
         this.maxTokensSlider.value = this.settings.maxTokens;
@@ -547,6 +558,7 @@ class GeminiClone {
     saveSettings() {
         localStorage.setItem('gemini-settings', JSON.stringify(this.settings));
         localStorage.setItem('token-limit-disabled', this.tokenLimitDisabled ? 'true' : 'false');
+        localStorage.setItem('chatHistoryEnabled', this.chatHistoryEnabled ? 'true' : 'false');
     }
 
     toggleSidebar() {
@@ -843,7 +855,7 @@ class GeminiClone {
         // Build conversation history based on settings
         let conversationHistory = [];
         if (this.settings.includeChatHistory) {
-            conversationHistory = this.chats[this.currentChatId].messages.slice(-10);
+            conversationHistory = this.chats[this.currentChatId].messages;
         }
 
         // Format messages for the API
@@ -1883,36 +1895,36 @@ class GeminiClone {
             this.showToast('לא ניתן לייצר מחדש כרגע', 'error');
             return;
         }
-        
+
         const messages = this.chats[this.currentChatId].messages;
-        if (messages.length < 2) {
-            this.showToast('אין תשובה לייצר מחדש', 'error');
+        if (!messages || messages.length === 0) {
+            this.showToast('אין הודעות בצ\'אט', 'error');
             return;
         }
-        
-        // Find the last user message
+
+        // מצא את הודעת המשתמש האחרונה
         let userMessageIndex = messages.length - 1;
         while (userMessageIndex >= 0 && messages[userMessageIndex].role !== 'user') {
             userMessageIndex--;
         }
-        
+
         if (userMessageIndex < 0) {
             this.showToast('לא נמצאה הודעת משתמש אחרונה', 'error');
             return;
         }
-        
-        // Remove all messages after the last user message
+
+        // הסר את כל ההודעות שאחריה (אם קיימת תגובת עוזר)
         this.chats[this.currentChatId].messages = messages.slice(0, userMessageIndex + 1);
         this.saveChatData();
         this.renderMessages();
-        
-        // Re-send the last user message
+
+        // שלח שוב את ההודעה
         const lastUserMessage = messages[userMessageIndex].content;
         this.setLoading(true);
         this.startFakeProgressBar();
         this.showLoadingSteps();
         this.abortController = new AbortController();
-        
+
         this.callGemini(lastUserMessage, this.abortController.signal)
             .then(response => {
                 const assistantMessage = {
@@ -1921,14 +1933,14 @@ class GeminiClone {
                     content: response,
                     timestamp: new Date().toISOString(),
                     model: this.currentModel,
-                vote: null
+                    vote: null
                 };
-                
+
                 this.chats[this.currentChatId].messages.push(assistantMessage);
                 this.chats[this.currentChatId].updatedAt = new Date().toISOString();
                 this.saveChatData();
                 this.renderMessages();
-                
+
                 setTimeout(() => {
                     this.chatContainer.scrollTop = this.chatContainer.scrollHeight;
                 }, 100);
@@ -1937,7 +1949,7 @@ class GeminiClone {
                 if (error.name === 'AbortError') {
                     this.showToast('התגובה הופסקה', 'error');
                 } else {
-                    this.showToast('שגיאה בייצור מחדש: ' + error.message, 'error');
+                    this.showToast('שגיאה ביצירת תשובה מחדש: ' + error.message, 'error');
                 }
             })
             .finally(() => {
@@ -1945,6 +1957,7 @@ class GeminiClone {
                 this.stopFakeProgressBar();
             });
     }
+
 }
 
 document.addEventListener('DOMContentLoaded', () => {
