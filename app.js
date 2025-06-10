@@ -13,7 +13,8 @@ class GeminiClone {
             includeChatHistory: true,
             hideLoadingOverlay: false
         }));
-        this.systemPrompt = localStorage.getItem('gemini-system-prompt') || 'שמור תמיד על רצף בשיחה, ובכל תשובה קח בחשבון את כל השיחה מתחילתה.';
+        this.CONSTANT_SYSTEM_PROMPT ='שמור תמיד על רצף בשיחה, ובכל תשובה קח בחשבון את כל השיחה מתחילתה.'
+        this.systemPrompt = localStorage.getItem('gemini-system-prompt') || '';
         this.systemPromptTemplate = localStorage.getItem('gemini-system-prompt-template') || '';
         this.isLoading = false;
         this.isLuxuryMode = localStorage.getItem('luxury-mode') === 'true';
