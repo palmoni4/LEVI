@@ -1260,16 +1260,22 @@ class GeminiClone {
         };
 
         likeBtn.addEventListener('click', () => {
-            message.vote = message.vote === 'like' ? null : 'like';
+            const wasSelected = message.vote === 'like';
+            message.vote = wasSelected ? null : 'like';
             this.saveChatData();
-            this.showToast('תודה על המשוב! שמחתי שאהבת!');
+            if (!wasSelected) {
+                this.showToast('תודה על המשוב! שמחתי שאהבת!');
+            }
             updateButtons();
         });
 
         dislikeBtn.addEventListener('click', () => {
-            message.vote = message.vote === 'dislike' ? null : 'dislike';
+            const wasSelected = message.vote === 'dislike';
+            message.vote = wasSelected ? null : 'dislike';
             this.saveChatData();
-            this.showToast('תודה על המשוב! אשתדל להיות טוב');
+            if (!wasSelected) {
+                this.showToast('תודה על המשוב. אשתדל להיות יותר טוב.');
+            }
             updateButtons();
         });
 
