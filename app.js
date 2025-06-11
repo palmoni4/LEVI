@@ -603,12 +603,30 @@ class GeminiClone {
     initializeExportOptions() {
         document.querySelectorAll('#exportModal .export-option').forEach(option => {
             option.addEventListener('click', () => {
-                document.querySelectorAll('#exportModal .export-option').forEach(opt => {
-                    opt.classList.remove('selected');
-                });
-                option.classList.add('selected');
+                const format = option.getAttribute('data-format');
+                const isAlreadySelected = option.classList.contains('selected');
+
+                if (isAlreadySelected) {
+                    // אם האפשרות כבר בוחרה, בצע יצוא מיד
+                    const includeTimestamps = document.querySelector('#includeTimestamps').checked;
+                    const includeSystemPrompts = document.querySelector('#includeSystemPrompts').checked;
+                    this.exportChat(format, includeTimestamps, includeSystemPrompts);
+                    this.hideExportModal();
+                } else {
+                    // הסר בחירה קודמת והוסף בחירה חדשה
+                    document.querySelectorAll('#exportModal .export-option').forEach(opt => {
+                        opt.classList.remove('selected');
+                    });
+                    option.classList.add('selected');
+                }
             });
         });
+
+        // הגדרת docx כברית מחדל בעת טעינה
+        const docxOption = document.querySelector('#exportModal .export-option[data-format="docx"]');
+        if (docxOption) {
+            docxOption.classList.add('selected');
+        }
     }
 
     showExportModal() {
