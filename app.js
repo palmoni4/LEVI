@@ -1552,67 +1552,159 @@ class GeminiClone {
         this.showToast('הצ\'אט יוצא בהצלחה ל-PDF', 'success');
     }
 
-    exportToDocx(chat, includeTimestamps, includeSystemPrompts) {
-        // For simplicity, we'll create a formatted HTML and let the browser handle the download
+    exportToDocx(chat, includeTimestamps, includeSystemPrompts) {// יצירת HTML עם תאימות משופרת ל-Word
         let html = `<!DOCTYPE html>
-        <html dir="rtl">
+        <html dir="rtl" lang="he">
         <head>
             <meta charset="UTF-8">
+            <meta name="generator" content="GeminiClone">
+            <meta name="progid" content="Word.Document">
             <title>${chat.title}</title>
             <style>
-                body { font-family: Arial, sans-serif; direction: rtl; }
-                .title { font-size: 24px; font-weight: bold; text-align: center; margin-bottom: 20px; }
-                .message { margin-bottom: 20px; }
-                .user { color: #4285f4; font-weight: bold; }
-                .assistant { color: #34a853; font-weight: bold; }
-                .timestamp { color: #888; font-size: 12px; }
-                .content { margin-top: 5px; white-space: pre-wrap; }
-                .system-prompt { font-style: italic; background: #f8f9fa; padding: 10px; border-radius: 5px; margin-bottom: 20px; }
+                @page WordSection1 {
+                    size: A4;
+                    margin: 2cm;
+                }
+                body { 
+                    font-family: 'Arial', 'David', sans-serif; 
+                    direction: rtl; 
+                    line-height: 1.6; 
+                    margin: 20px; 
+                    text-align: right; 
+                }
+                .title { 
+                    font-size: 24pt; 
+                    font-weight: bold; 
+                    text-align: center; 
+                    margin-bottom: 20pt; 
+                }
+                .message { 
+                    margin-bottom: 20pt; 
+                }
+                .user { 
+                    color: #4285F4; 
+                    font-weight: bold; 
+                    font-size: 12pt; 
+                }
+                .assistant { 
+                    color: #34A853; 
+                    font-weight: bold; 
+                    font-size: 12pt; 
+                }
+                .timestamp { 
+                    color: #888; 
+                    font-size: 10pt; 
+                    margin-right: 10px; 
+                }
+                .content { 
+                    margin-top: 5pt; 
+                    white-space: pre-wrap; 
+                    font-size: 11pt; 
+                }
+                .system-prompt { 
+                    font-style: italic; 
+                    background: #F8F9FA; 
+                    padding: 10px; 
+                    border-radius: 5px; 
+                    margin-bottom: 20pt; 
+                }
+                /* סגנונות לעיצובי Markdown */
+                h1 { font-size: 18pt; font-weight: bold; margin: 10pt 0; }
+                h2 { font-size: 16pt; font-weight: bold; margin: 8pt 0; }
+                h3 { font-size: 14pt; font-weight: bold; margin: 6pt 0; }
+                ul, ol { margin: 10pt 20pt; padding: 0; }
+                li { margin-bottom: 5pt; }
+                code { 
+                    background: #F4F4F4; 
+                    padding: 2px 4px; 
+                    border-radius: 3px; 
+                    font-family: 'Courier New', Courier, monospace; 
+                    font-size: 10pt; 
+                }
+                pre.code-block { 
+                    background: #F4F4F4; 
+                    padding: 10px; 
+                    border: 1px solid #DDD; 
+                    border-radius: 5px; 
+                    font-family: 'Courier New', Courier, monospace; 
+                    font-size: 10pt; 
+                    white-space: pre-wrap; 
+                }
+                table { 
+                    border-collapse: collapse; 
+                    width: 100%; 
+                    margin: 10pt 0; 
+                }
+                th, td { 
+                    border: 1px solid #DDD; 
+                    padding: 8px; 
+                    text-align: right; 
+                    font-size: 11pt; 
+                }
+                th { 
+                    background: #F8F9FA; 
+                    font-weight: bold; 
+                }
+                a { 
+                    color: #1A73E8; 
+                    text-decoration: none; 
+                }
+                a:hover { 
+                    text-decoration: underline; 
+                }
+                strong { 
+                    font-weight: bold; 
+                }
+                em { 
+                    font-style: italic; 
+                }
+                u { 
+                    text-decoration: underline; 
+                }
             </style>
         </head>
         <body>
             <div class="title">${chat.title}</div>`;
-        
+
+        // הוספת System Prompt אם נבחר
         if (includeSystemPrompts && chat.systemPrompt) {
             html += `<div class="system-prompt">
                 <div>System Prompt:</div>
-                <div>${chat.systemPrompt}</div>
+                <div>${this.formatMessageContent(chat.systemPrompt)}</div>
             </div>`;
         }
-        
+
+        // הוספת כל ההודעות עם עיצוב Markdown מלא
         for (const msg of chat.messages) {
             const role = msg.role === 'user' ? 'אתה' : 'Gemini';
             const roleClass = msg.role === 'user' ? 'user' : 'assistant';
-            
+
             html += `<div class="message">
                 <div>
                     <span class="${roleClass}">${role}</span>`;
-            
+
             if (includeTimestamps) {
                 const time = new Date(msg.timestamp).toLocaleString('he-IL');
-                html += `<span class="timestamp"> (${time})</span>`;
+                html += `<span class="timestamp">(${time})</span>`;
             }
-            
-            // Sanitize content but preserve line breaks
-            const sanitizedContent = msg.content
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/\n/g, '<br>');
-                
+
+            // שימוש ב-formatMessageContent לעיבוד תוכן ההודעה עם תמיכה ב-Markdown
+            const formattedContent = this.formatMessageContent(msg.content);
+
             html += `</div>
-                <div class="content">${sanitizedContent}</div>
+                <div class="content">${formattedContent}</div>
             </div>`;
         }
-        
+
         html += `</body></html>`;
-        
-        // Create a Blob and download
-        const blob = new Blob([html], { type: 'application/vnd.ms-word' });
+
+        // יצירת Blob והורדה כקובץ doc
+        const blob = new Blob([html], { type: 'application/msword' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
         link.download = `chat_${chat.title.replace(/[^a-zA-Z0-9]/g, '_')}.doc`;
         link.click();
-        
+
         this.showToast('הצ\'אט יוצא בהצלחה ל-Word', 'success');
     }
 
