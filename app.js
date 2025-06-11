@@ -621,7 +621,14 @@ class GeminiClone {
         document.querySelectorAll('#exportModal .export-option').forEach(opt => {
             opt.classList.remove('selected');
         });
-        document.querySelector('#exportModal .export-option[data-format="pdf"]').classList.add('selected');
+        // בחירת docx כברירת מחדל
+        const docxOption = document.querySelector('#exportModal .export-option[data-format="docx"]');
+        if (docxOption) {
+            docxOption.classList.add('selected');
+        } else {
+            // חלופה למקרה ש-docx לא קיים
+            document.querySelector('#exportModal .export-option[data-format="pdf"]').classList.add('selected');
+        }
         
         this.exportModal.classList.add('visible');
     }
