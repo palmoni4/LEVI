@@ -219,7 +219,7 @@ class GeminiClone {
     bindEvents() {
         // Sidebar controls
         this.sidebarToggle.addEventListener('click', () => this.toggleSidebar());
-        this.newChatBtn.addEventListener('click', () => this.startNewChat());
+        this.newChatBtn.addEventListener('click', () => this.resetToWelcomeScreen());
         this.themeToggle.addEventListener('click', () => this.toggleTheme());
         this.luxuryToggle.addEventListener('click', () => this.toggleLuxuryMode());
         this.clearHistoryBtn.addEventListener('click', () => this.clearHistory());
@@ -348,6 +348,19 @@ class GeminiClone {
 
     inputWrapper() {
         return this.messageInput.closest('.input-wrapper');
+    }
+
+    resetToWelcomeScreen() {
+        this.currentChatId = null;
+        this.chatMessages.innerHTML = '';
+        this.chatMessages.style.display = 'none';
+        this.welcomeScreen.style.display = 'block';
+        this.chatTitle.textContent = 'צ\'אט חדש';
+        this.messageInput.value = '';
+        this.updateCharCount();
+        this.files = [];
+        this.renderFilePreview();
+        this.renderChatHistory();
     }
 
     loadSettings() {
