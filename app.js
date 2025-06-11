@@ -11,7 +11,7 @@ class GeminiClone {
             topP: 0.95,
             topK: 40,
             streamResponse: true,
-            includeChatHistory: false,
+            includeChatHistory: true,
             hideLoadingOverlay: false
         }));
         this.CONSTANT_SYSTEM_PROMPT ='שמור תמיד על רצף בשיחה, ובכל תשובה קח בחשבון את כל השיחה מתחילתה. ואם יש לך גישה להיסטוריה, גש לשיחה עם המידע המעובד מכל ההיסטוריה'
@@ -343,13 +343,7 @@ class GeminiClone {
             this.inputWrapper().classList.remove('dragover');
             this.handleDropFiles(e.dataTransfer.files);
         });
-        
-        // History search
-        if (this.historySearch) {
-            this.historySearch.addEventListener('input', () => this.filterChatHistory());
-        } else {
-            console.warn('historySearch element not found');
-        }
+
     }
 
     inputWrapper() {
