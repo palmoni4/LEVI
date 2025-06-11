@@ -10,7 +10,6 @@ class GeminiClone {
             maxTokens: 4096,
             topP: 0.95,
             topK: 40,
-            streamResponse: true,
             includeChatHistory: true,
             hideLoadingOverlay: false
         }));
@@ -536,11 +535,6 @@ class GeminiClone {
     updateTopK(value) {
         this.settings.topK = parseInt(value);
         this.topKValue.textContent = value;
-        this.saveSettings();
-    }
-
-    updateStreamResponse(checked) {
-        this.settings.streamResponse = checked;
         this.saveSettings();
     }
 
