@@ -352,14 +352,30 @@ class GeminiClone {
 
     resetToWelcomeScreen() {
         this.currentChatId = null;
+
         this.chatMessages.innerHTML = '';
+        this.chatMessages.classList.remove('active');
         this.chatMessages.style.display = 'none';
-        this.welcomeScreen.style.display = 'block';
+        this.welcomeScreen.style.display = 'flex';
+
         this.chatTitle.textContent = 'צ\'אט חדש';
         this.messageInput.value = '';
         this.updateCharCount();
+        this.messageInput.style.height = 'auto';
+
         this.files = [];
         this.renderFilePreview();
+
+        if (this.loadingOverlay) this.loadingOverlay.style.display = 'none';
+        if (this.stopBtn) this.stopBtn.style.display = 'none';
+        this.setLoading(false);
+        this.stopFakeProgressBar();
+
+        if (this.abortController) {
+            this.abortController.abort();
+            this.abortController = null;
+        }
+
         this.renderChatHistory();
     }
 
