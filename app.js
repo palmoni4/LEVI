@@ -849,7 +849,14 @@ class GeminiClone {
         // Build conversation history based on settings
         let conversationHistory = [];
         if (this.settings.includeChatHistory) {
-            conversationHistory = this.chats[this.currentChatId].messages;
+            const currentChat = this.chats[this.currentChatId];
+            if (currentChat && currentChat.messages) {
+                // Get all messages except the newest one that's about to be sent
+                conversationHistory = [...currentChat.messages];
+                if (conversationHistory.length > 0) {
+                    conversationHistory.pop(); // Remove the last message
+                }
+            }
         }
 
         // Format messages for the API
@@ -862,7 +869,7 @@ class GeminiClone {
         if (this.systemPrompt) {
             messages.unshift({
                 role: 'user',
-                parts: [{ text: `System: ${this.systemPrompt}` }]
+                parts: [{ text: `System: ${this.CONSTANT_SYSTEM_PROMPT} ${this.systemPrompt}` }]
             });
         }
 
