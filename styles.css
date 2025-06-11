@@ -26,6 +26,11 @@
     --glass-effect: rgba(255, 255, 255, 0.1);
 }
 
+#welcomeScreen {
+    display: flex;
+    justify-content: center;
+}
+
 #welcomeScreen .welcome-content h1 {
     font-size: 3rem; /* אפשר לשנות לגודל הרצוי */
     line-height: 1.2;
