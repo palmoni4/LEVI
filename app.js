@@ -67,23 +67,36 @@ class GeminiClone {
 
     showToast(message, type = 'success', options = {}) {
         const toast = document.createElement('div');
+    
+        // הוספת סוג הטוסט, אם לא נבחר סוג אז ברירת המחדל היא 'success'
         toast.className = `toast ${type}`;
+    
         toast.innerHTML = `
-            <span class="material-icons">${type === 'success' ? 'check_circle' : 'error'}</span>
+            <span class="material-icons">${type === 'success' ? 'check_circle' : type === 'error' ? 'error' : ''}</span>
             <span>${message}</span>
             ${options.action ? `<button class="undo-btn">${options.action.text}</button>` : ''}
         `;
+
+        // הוספת הטוסט למיכל
         this.toastContainer.appendChild(toast);
-    
+
+        // אם יש פעולה כפתור, הגדרת פעולה
         if (options.action) {
             toast.querySelector('.undo-btn').onclick = options.action.callback;
         }
-    
+
+        // אם סוג הטוסט הוא 'neutral', הוסף גבול צהוב
+        if (type === 'neutral') {
+            toast.style.borderLeft = '4px solid yellow';  // גבול צהוב
+        }
+
+        // אחרי 5 שניות, יתחיל האנימציה להסתיר את הטוסט
         setTimeout(() => {
             toast.style.animation = 'toastSlideUp 0.3s ease-out forwards';
             setTimeout(() => toast.remove(), 300);
         }, 5000);
     }
+
 
     initializeElements() {
         // Main UI elements
