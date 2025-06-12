@@ -1479,9 +1479,9 @@ body {
 }
 
 .toast.neutral {
-    background: var(--background-primary);
-    color: var(--text-primary);
-    border-left: 4px solid yellow; /* גבול צהוב */
+    background: #FFCC00;  /* צהוב כהה יותר */
+    color: var(--text-primary);  /* צבע טקסט ראשי */
+    border-left: 4px solid #FF9900; /* גבול צהוב כהה יותר */
     box-shadow: var(--shadow-light);
 }
 
