@@ -526,30 +526,28 @@ class GeminiClone {
 
     resetToWelcomeScreen() {
         this.currentChatId = null;
-
         this.chatMessages.innerHTML = '';
         this.chatMessages.classList.remove('active');
         this.chatMessages.style.display = 'none';
         this.welcomeScreen.style.display = 'flex';
-
         this.chatTitle.textContent = 'צ\'אט חדש';
+        const editChatTitleBtn = document.getElementById('editChatTitleBtn');
+        if (editChatTitleBtn) {
+            editChatTitleBtn.style.display = 'none';
+        }
         this.messageInput.value = '';
         this.updateCharCount();
         this.messageInput.style.height = 'auto';
-
         this.files = [];
         this.renderFilePreview();
-
         if (this.loadingOverlay) this.loadingOverlay.style.display = 'none';
         if (this.stopBtn) this.stopBtn.style.display = 'none';
         this.setLoading(false);
         this.stopFakeProgressBar();
-
         if (this.abortController) {
             this.abortController.abort();
             this.abortController = null;
         }
-
         this.renderChatHistory();
     }
 
@@ -905,7 +903,7 @@ class GeminiClone {
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
             model: this.currentModel,
-                vote: null,
+            vote: null,
             systemPrompt: this.systemPrompt
         };
         this.saveChatData();
@@ -915,6 +913,11 @@ class GeminiClone {
         this.messageInput.focus();
         this.files = [];
         this.renderFilePreview();
+        // ודא שהכפתור מוסתר
+        const editChatTitleBtn = document.getElementById('editChatTitleBtn');
+        if (editChatTitleBtn) {
+            editChatTitleBtn.style.display = 'none';
+        }
     }
 
     showChatInterface() {
@@ -929,6 +932,10 @@ class GeminiClone {
         if (this.currentChatId && this.chats[this.currentChatId]) {
             this.chats[this.currentChatId].title = title;
             this.saveChatData();
+        }
+        const editChatTitleBtn = document.getElementById('editChatTitleBtn');
+        if (editChatTitleBtn) {
+            editChatTitleBtn.style.display = title === 'צ\'אט חדש' ? 'none' : 'inline-block';
         }
     }
 
@@ -1600,6 +1607,10 @@ class GeminiClone {
         this.updateChatTitle(chat.title);
         this.renderChatHistory();
         this.files = [];
+        const editChatTitleBtn = document.getElementById('editChatTitleBtn');
+        if (editChatTitleBtn) {
+            editChatTitleBtn.style.display = chat.title === 'צ\'אט חדש' ? 'none' : 'inline-block';
+        }
     }
 
     deleteChat(chatId) {
