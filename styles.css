@@ -155,7 +155,7 @@ mark {
 .history-footer {
     position: absolute;
     bottom: 10px; /* הצמד את הכפתורים 10px מהתחתית */
-    left: 3px;
+    left: 0px;
     width: 100%;
     display: flex;
     justify-content: flex-start;
@@ -164,7 +164,7 @@ mark {
 
 .history-footer .icon-btn {
     margin: 0;
-    padding: 16px 30px;
+    padding: 13px 10px;
     background: var(--gradient-primary);
     color: white;
     border-radius: var(--border-radius);
