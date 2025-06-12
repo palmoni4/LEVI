@@ -1552,7 +1552,7 @@ class GeminiClone {
                 this.chats[this.currentChatId].messages = messages.slice(0, messageIndex);
                 this.saveChatData();
                 this.renderMessages();
-                this.showToast('ערוך את ההודעה ושלח שוב', 'success');
+                this.showToast('ערוך את ההודעה ושלח שוב', 'neutral');
             }
         }
     }
