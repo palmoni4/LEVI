@@ -79,6 +79,27 @@
     margin-top: 12px;
 }
 
+/* עיצוב כפתורי ייבוא וייצוא */
+.icon-btn {
+    display: flex;
+    align-items: center;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 10px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.icon-btn:hover {
+    background-color: #0056b3;
+}
+
+.icon-btn span.material-icons {
+    margin-right: 8px;
+}
+
 .setting-group.small-toggle {
     margin-top: 10px;
 }

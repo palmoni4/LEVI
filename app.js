@@ -99,6 +99,8 @@ class GeminiClone {
         this.exportDropdownContent = document.getElementById('exportDropdownContent');
         this.hideLoadingOverlayCheckbox = document.getElementById('hideLoadingOverlay');
         this.historySearch = document.getElementById('historySearch');
+        this.exportHistoryBtn = document.getElementById('exportHistoryBtn');
+        this.importHistoryBtn = document.getElementById('importHistoryBtn');
         
         // API & Model Settings
         this.geminiApiKey = document.getElementById('geminiApiKey');
@@ -225,6 +227,8 @@ class GeminiClone {
         this.clearHistoryBtn.addEventListener('click', () => this.clearHistory());
         this.exportBtn.addEventListener('click', () => this.showExportModal());
         this.hideLoadingOverlayCheckbox.addEventListener('change', (e) => this.updateHideLoadingOverlay(e.target.checked));
+        this.exportHistoryBtn.addEventListener('click', () => this.exportHistoryAndSettings());
+        this.importHistoryBtn.addEventListener('click', () => this.handleImport());
 
         // History search
         if (this.historySearch) {
@@ -348,6 +352,163 @@ class GeminiClone {
 
     inputWrapper() {
         return this.messageInput.closest('.input-wrapper');
+    }
+
+    exportHistoryAndSettings() {
+        const data = {
+            chats: this.chats,
+            settings: {
+                apiKey: this.apiKey,
+                currentModel: this.currentModel,
+                chatHistoryEnabled: this.chatHistoryEnabled,
+                settings: this.settings,
+                systemPrompt: this.systemPrompt,
+                systemPromptTemplate: this.systemPromptTemplate,
+                isLuxuryMode: this.isLuxuryMode,
+                tokenLimitDisabled: this.tokenLimitDisabled
+            }
+        };
+
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `gemini_clone_history_${new Date().toISOString().split('T')[0]}.json`;
+        link.click();
+
+        this.showToast('היסטוריה והגדרות יוצאו בהצלחה', 'success');
+    }
+
+    handleImport() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+
+        input.onchange = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                try {
+                    const data = JSON.parse(event.target.result);
+                    this.importHistoryAndSettings(data);
+                } catch (error) {
+                    this.showToast('שגיאה בייבוא: קובץ לא תקין', 'error');
+                    console.error('Import error:', error);
+                }
+            };
+            reader.onerror = () => {
+                this.showToast('שגיאה בקריאת הקובץ', 'error');
+            };
+            reader.readAsText(file);
+        };
+
+        input.click();
+    }
+
+    importHistoryAndSettings(data) {
+        if (!data.chats || !data.settings) {
+            this.showToast('מבנה קובץ לא תקין', 'error');
+            return;
+        }
+
+        // Create a copy of existing chats
+        const mergedChats = { ...this.chats };
+
+        // Process each imported chat
+        Object.entries(data.chats).forEach(([importedChatId, newChat]) => {
+            let finalChatId = importedChatId;
+            let finalChat = { ...newChat };
+
+            // Check if the current chat has the same title
+            const currentChat = this.currentChatId && mergedChats[this.currentChatId];
+            const isCurrentChatConflict = currentChat && currentChat.title === newChat.title;
+
+            if (isCurrentChatConflict) {
+                const shouldOverwrite = confirm(
+                    `צ'אט עם הכותרת "${newChat.title}" הוא הצ'אט הנוכחי. האם לדרוס אותו? (לחץ "אישור" לדריסה, "ביטול" לשמירת שניהם כשיחות נפרדות)`
+                );
+
+                if (shouldOverwrite) {
+                    // Overwrite the current chat
+                    finalChatId = this.currentChatId;
+                } else {
+                    // Generate a new unique chat ID
+                    finalChatId = Date.now().toString() + Math.random().toString(36).substr(2, 9);
+                    // Find the next available number for the title
+                    let counter = 2;
+                    let newTitle = `${newChat.title} (${counter})`;
+                    while (Object.values(mergedChats).some(chat => chat.title === newTitle)) {
+                        counter++;
+                        newTitle = `${newChat.title} (${counter})`;
+                    }
+                    finalChat = { ...newChat, title: newTitle };
+                }
+            } else {
+                // Check for title conflicts with other chats (non-current)
+                let counter = 2;
+                let newTitle = newChat.title;
+                while (Object.values(mergedChats).some(chat => chat.title === newTitle && chat !== currentChat)) {
+                    newTitle = `${newChat.title} (${counter})`;
+                    counter++;
+                }
+                finalChat = { ...newChat, title: newTitle };
+
+                // If the chatId already exists, assign a new ID
+                if (mergedChats[importedChatId]) {
+                    finalChatId = Date.now().toString() + Math.random().toString(36).substr(2, 9);
+                }
+            }
+
+            // Add or update the chat in mergedChats
+            mergedChats[finalChatId] = finalChat;
+        });
+
+        // Update chats
+        this.chats = mergedChats;
+        localStorage.setItem('gemini-chats', JSON.stringify(this.chats));
+
+        // Update settings
+        this.apiKey = data.settings.apiKey || '';
+        this.currentModel = data.settings.currentModel || 'gemini-2.5-flash-preview-05-20';
+        this.chatHistoryEnabled = data.settings.chatHistoryEnabled !== false;
+        this.settings = data.settings.settings || {
+            temperature: 0.7,
+            maxTokens: 4096,
+            topP: 0.95,
+            topK: 40,
+            streamResponse: true,
+            includeChatHistory: true,
+            hideLoadingOverlay: false
+        };
+        this.systemPrompt = data.settings.systemPrompt || '';
+        this.systemPromptTemplate = data.settings.systemPromptTemplate || '';
+        this.isLuxuryMode = data.settings.isLuxuryMode || false;
+        this.tokenLimitDisabled = data.settings.tokenLimitDisabled || false;
+
+        // Save settings to localStorage
+        localStorage.setItem('gemini-api-key', this.apiKey);
+        localStorage.setItem('gemini-model', this.currentModel);
+        localStorage.setItem('chatHistoryEnabled', this.chatHistoryEnabled ? 'true' : 'false');
+        localStorage.setItem('gemini-settings', JSON.stringify(this.settings));
+        localStorage.setItem('gemini-system-prompt', this.systemPrompt);
+        localStorage.setItem('gemini-system-prompt-template', this.systemPromptTemplate);
+        localStorage.setItem('luxury-mode', this.isLuxuryMode ? 'true' : 'false');
+        localStorage.setItem('token-limit-disabled', this.tokenLimitDisabled ? 'true' : 'false');
+
+        // Refresh UI
+        this.loadSettings();
+        this.renderChatHistory();
+        this.loadTheme();
+        this.loadLuxuryMode();
+
+        if (this.currentChatId && this.chats[this.currentChatId]) {
+            this.loadChat(this.currentChatId);
+        } else {
+            this.resetToWelcomeScreen();
+        }
+
+        this.showToast('היסטוריה והגדרות יובאו בהצלחה', 'success');
     }
 
     resetToWelcomeScreen() {
@@ -1426,7 +1587,6 @@ class GeminiClone {
         this.updateChatTitle(chat.title);
         this.renderChatHistory();
         this.files = [];
-        this.renderFilePreview();
     }
 
     deleteChat(chatId) {
