@@ -1528,7 +1528,7 @@ body {
 }
 
 .toast.neutral {
-    background: #FFCC00;  /* צהוב כהה יותר */
+    background:var(--background-secondary);
     color: var(--text-primary);  /* צבע טקסט ראשי */
     border-left: 4px solid #FF9900; /* גבול צהוב כהה יותר */
     box-shadow: var(--shadow-light);
