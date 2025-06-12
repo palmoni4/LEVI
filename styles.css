@@ -1478,6 +1478,13 @@ body {
     border-left: 4px solid var(--accent-color);
 }
 
+.toast.neutral {
+    background: var(--background-primary);
+    color: var(--text-primary);
+    border-left: 4px solid yellow; /* גבול צהוב */
+    box-shadow: var(--shadow-light);
+}
+
 @keyframes toastSlideDown {
     from { opacity: 0; transform: translateY(-20px);}
     to { opacity: 1; transform: translateY(0);}
