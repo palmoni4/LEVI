@@ -1,5 +1,10 @@
 class GeminiClone {
     constructor() {
+        // מפת מילות מפתח ואייקונים עבור systemPrompt
+        this.iconMap = {
+            'בחור ישיבה מבוגר': 'nati.jpg',
+            'טראמפ': 'trump.jpg'
+        };
         this.currentChatId = null;
         this.chats = JSON.parse(localStorage.getItem('gemini-chats') || '{}');
         this.apiKey = localStorage.getItem('gemini-api-key') || '';
@@ -194,10 +199,10 @@ class GeminiClone {
 
     filterChatHistory() {
         if (!this.historySearch) return;
-
+    
         const query = this.historySearch.value.trim().toLowerCase();
         const chatArray = Object.values(this.chats);
-
+    
         const results = chatArray.filter(chat =>
             chat.title?.toLowerCase().includes(query) ||
             chat.systemPrompt?.toLowerCase().includes(query) ||
@@ -224,7 +229,7 @@ class GeminiClone {
 
         this.chatHistory.innerHTML = results.map(chat => `
             <div class="history-item ${chat.id === this.currentChatId ? 'active' : ''}" data-chat-id="${chat.id}">
-                <div class="history-item-title">${highlight(chat.title)}</div>
+                <div class="history-item-title">${this.getPromptIcon(chat.systemPrompt)}${highlight(chat.title)}</div>
                 <div class="history-item-preview">${highlight(this.getChatSummary(chat))}</div>
                 <button class="delete-chat-btn" data-chat-id="${chat.id}" title="מחק צ'אט">
                     <span class="material-icons">delete</span>
@@ -487,6 +492,17 @@ class GeminiClone {
         };
 
         input.click();
+    }
+
+    getPromptIcon(systemPrompt) {
+        if (!systemPrompt) return '';
+        const promptLower = systemPrompt.toLowerCase();
+        for (const [keyword, iconPath] of Object.entries(this.iconMap)) {
+            if (promptLower.includes(keyword.toLowerCase())) {
+                return `<img src="${iconPath}" alt="${keyword}" class="prompt-icon" style="width: 18px; height: 18px; margin-left: 5px; vertical-align: middle;">`;
+            }
+        }
+        return '';
     }
 
     importHistoryAndSettings(data) {
@@ -1717,7 +1733,7 @@ class GeminiClone {
         const chatArray = Object.values(this.chats);
         const historyHeader = document.querySelector('.history-header');
         const searchWrapper = document.querySelector('.search-wrapper');
-
+    
         if (chatArray.length === 0) {
             if (historyHeader) historyHeader.style.display = 'none';
             if (searchWrapper) searchWrapper.style.display = 'none';
@@ -1731,7 +1747,7 @@ class GeminiClone {
         const sortedChats = chatArray.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
         this.chatHistory.innerHTML = sortedChats.map(chat => `
             <div class="history-item ${chat.id === this.currentChatId ? 'active' : ''}" data-chat-id="${chat.id}">
-                <div class="history-item-title">${chat.title}</div>
+                <div class="history-item-title">${this.getPromptIcon(chat.systemPrompt)}${chat.title}</div>
                 <div class="history-item-preview">${this.getChatSummary(chat)}</div>
                 <button class="delete-chat-btn" data-chat-id="${chat.id}" title="מחק צ'אט">
                     <span class="material-icons">delete</span>

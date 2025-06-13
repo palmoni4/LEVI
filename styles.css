@@ -37,6 +37,21 @@
     display: none;
 }
 
+.history-item-title {
+    display: flex;
+    align-items: center;
+    font-weight: 500;
+    font-size: 16px;
+}
+
+.prompt-icon {
+    width: 18px;
+    height: 18px;
+    margin-left: 5px;
+    vertical-align: middle;
+    object-fit: contain;
+}
+
 .history-settings-inline {
     display: flex;
     align-items: center;
