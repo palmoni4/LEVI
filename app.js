@@ -34,6 +34,11 @@ class GeminiClone {
         this.loadLuxuryMode();
         this.initializeQuickActions();
         this.initializeExportOptions();
+
+        const editChatTitleBtn = document.getElementById('editChatTitleBtn');
+        if (editChatTitleBtn) {
+            editChatTitleBtn.style.display = 'none';
+        }
     }
 
 

@@ -33,6 +33,10 @@
 
 }
 
+#editChatTitleBtn {
+    display: none;
+}
+
 .history-settings-inline {
     display: flex;
     align-items: center;
