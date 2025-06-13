@@ -711,6 +711,9 @@ class GeminiClone {
         
         // Render chat history
         this.renderChatHistory();
+        
+        // Set initial visibility of maxMessagesSelect based on includeAllChatHistory
+        this.toggleMaxMessagesVisibility();
     }
 
     updateHideLoadingOverlay(checked) {
