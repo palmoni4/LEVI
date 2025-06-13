@@ -128,6 +128,19 @@
                                 <input type="checkbox" id="includeChatHistory" checked>
                                 כלול היסטוריית שיחה
                             </label>
+                            <div class="history-settings-inline">
+                                <label for="includeAllChatHistory" class="checkbox-label" title="בבחירת אפשרות זו, כל היסטוריית הצ'אט תיכלל במניעי התשובה. תיתכן האטה במהירות התגובה. כדאי להשבית את הגבלת האסימונים">
+                                    <input type="checkbox" id="includeAllChatHistory">
+                                    כלול היסטוריית צ'אט
+                                </label>
+                                <select id="maxMessagesSelect">
+                                    <option value="" selected>ללא הגבלה</option>
+                                    <option value="20">20 הודעות</option>
+                                    <option value="50">50 הודעות</option>
+                                    <option value="100">100 הודעות</option>
+                                    <option value="200">200 הודעות</option>
+                                </select>
+                            </div>
                             <label class="checkbox-label" title="כאשר האפשרות פעילה, לא יופיע החלון בעת טעינת התשובה ותוכלו להמשיך לרפרף בשיחה.">
                                     <input type="checkbox" id="hideLoadingOverlay" >
                                     הסתר חלון טעינת תשובה

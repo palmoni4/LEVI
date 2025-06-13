@@ -12,13 +12,15 @@ class GeminiClone {
             topK: 40,
             streamResponse: true,
             includeChatHistory: true,
+            includeAllChatHistory: false,
             hideLoadingOverlay: false
         }));
-        this.CONSTANT_SYSTEM_PROMPT ='שמור תמיד על רצף בשיחה, ובכל תשובה קח בחשבון את כל השיחה מתחילתה. ואם יש לך גישה להיסטוריה, גש לשיחה עם המידע המעובד מכל ההיסטוריה'
+        this.CONSTANT_SYSTEM_PROMPT ='שמור תמיד על רצף בשיחה, ובכל תשובה קח בחשבון את כל השיחה מתחילתה. ואם יש לך גישה להיסטוריה, גש לשיחה עם המידע המעובד מכל ההיסטוריה. Please use the provided conversation history to inform your response. ענה בעברית.'
         this.systemPrompt = localStorage.getItem('gemini-system-prompt') || '';
         this.systemPromptTemplate = localStorage.getItem('gemini-system-prompt-template') || '';
         this.isLoading = false;
         this.isLuxuryMode = localStorage.getItem('luxury-mode') === 'true';
+        this.tokenLimitDisabled = localStorage.getItem('token-limit-disabled') === 'true';
         this.abortController = null;
         this.files = [];
         this.generationProgress = 0;
@@ -114,6 +116,7 @@ class GeminiClone {
         this.historySearch = document.getElementById('historySearch');
         this.exportHistoryBtn = document.getElementById('exportHistoryBtn');
         this.importHistoryBtn = document.getElementById('importHistoryBtn');
+        this.includeAllChatHistoryCheckbox = document.getElementById('includeAllChatHistory');
         
         // API & Model Settings
         this.geminiApiKey = document.getElementById('geminiApiKey');
@@ -131,6 +134,23 @@ class GeminiClone {
         this.topPValue = document.getElementById('topPValue');
         this.topKValue = document.getElementById('topKValue');
         this.apiStatus = document.getElementById('apiStatus');
+
+        // Chat Interface
+        this.mainContent = document.getElementById('mainContent');
+        this.welcomeScreen = document.getElementById('welcomeScreen');
+        this.chatMessages = document.getElementById('chatMessages');
+        this.chatContainer = document.getElementById('chatContainer');
+        this.chatTitle = document.getElementById('chatTitle');
+        this.shareBtn = document.getElementById('shareBtn');
+        this.regenerateBtn = document.getElementById('regenerateBtn');
+        this.messageInput = document.getElementById('messageInput');
+        this.sendBtn = document.getElementById('sendBtn');
+        this.stopBtn = document.getElementById('stopBtn');
+        this.charCount = document.getElementById('charCount');
+        this.modelInfo = document.getElementById('modelInfo');
+        this.attachBtn = document.getElementById('attachBtn');
+        this.micBtn = document.getElementById('micBtn');
+        this.maxMessagesSelect = document.getElementById('maxMessagesSelect'); // הוסף שורה זו
         
         // Chat Interface
         this.mainContent = document.getElementById('mainContent');
@@ -243,6 +263,10 @@ class GeminiClone {
         this.exportHistoryBtn.addEventListener('click', () => this.exportHistoryAndSettings());
         this.importHistoryBtn.addEventListener('click', () => this.handleImport());
 
+        if (this.includeAllChatHistoryCheckbox) {
+            this.includeAllChatHistoryCheckbox.addEventListener('change', (e) => this.updateIncludeAllChatHistory(e.target.checked));
+        }
+
         // History search
         if (this.historySearch) {
             this.historySearch.addEventListener('input', () => this.filterChatHistory());
@@ -270,8 +294,6 @@ class GeminiClone {
                 this.filterChatHistory();
             });
         }
-
-
         
         // Settings controls
         this.geminiApiKey.addEventListener('input', (e) => this.saveApiKey(e.target.value));
@@ -285,6 +307,14 @@ class GeminiClone {
         this.streamResponseCheckbox.addEventListener('change', (e) => this.updateStreamResponse(e.target.checked));
         this.includeChatHistoryCheckbox.addEventListener('change', (e) => this.updateIncludeChatHistory(e.target.checked));
         
+        // הצגת תפריט maxMessagesSelect רק אם 'כלול היסטוריית צ'אט' פעיל
+        this.includeAllChatHistoryCheckbox?.addEventListener('change', () => {
+            this.toggleMaxMessagesVisibility();
+        });
+
+        // הפעלה ראשונית במצב טעינה
+        this.toggleMaxMessagesVisibility();
+
         // Chat actions
         this.shareBtn.addEventListener('click', () => this.shareChat());
         this.regenerateBtn.addEventListener('click', () => this.regenerateLastResponse());
@@ -361,10 +391,45 @@ class GeminiClone {
             this.handleDropFiles(e.dataTransfer.files);
         });
 
+        // Max Messages Dropdown
+        const maxMessagesSelect = document.getElementById('maxMessagesSelect');
+        if (maxMessagesSelect) {
+            // טעינת הגדרה קיימת מ-localStorage
+            const settings = JSON.parse(localStorage.getItem('gemini-settings')) || {};
+            if (settings.maxMessages) {
+                maxMessagesSelect.value = settings.maxMessages;
+            }
+            // עדכון localStorage בעת שינוי בתפריט
+            maxMessagesSelect.addEventListener('change', () => {
+                const value = maxMessagesSelect.value;
+                const settings = JSON.parse(localStorage.getItem('gemini-settings')) || {};
+                if (value === '') {
+                    delete settings.maxMessages;
+                } else {
+                    settings.maxMessages = parseInt(value);
+                }
+                localStorage.setItem('gemini-settings', JSON.stringify(settings));
+            });
+        } else {
+            console.warn('maxMessagesSelect element not found');
+        }
+
+    }
+
+    updateIncludeAllChatHistory(checked) {
+        this.settings.includeAllChatHistory = checked;
+        this.saveSettings();
     }
 
     inputWrapper() {
         return this.messageInput.closest('.input-wrapper');
+    }
+
+    toggleMaxMessagesVisibility() {
+        const selectElement = this.maxMessagesSelect;
+        if (selectElement) {
+            selectElement.style.display = this.includeAllChatHistoryCheckbox?.checked ? 'inline-block' : 'none';
+        }
     }
 
     exportHistoryAndSettings() {
@@ -556,7 +621,9 @@ class GeminiClone {
         this.geminiApiKey.value = this.apiKey;
         this.geminiModel.value = this.currentModel;
         this.hideLoadingOverlayCheckbox.checked = this.settings.hideLoadingOverlay !== false;
-        
+        if (this.includeAllChatHistoryCheckbox) {
+            this.includeAllChatHistoryCheckbox.checked = this.settings.includeAllChatHistory;
+        }
         // Load system prompt
         this.systemPromptInput.value = this.systemPrompt;
         this.systemPromptTemplateSelect.value = this.systemPromptTemplate;
@@ -1079,36 +1146,116 @@ class GeminiClone {
     }
 
     async callGemini(message, signal) {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.currentModel}:generateContent?key=${this.apiKey}`;
+        const url = "https://generativelanguage.googleapis.com/v1beta/models/" + this.currentModel + ":generateContent?key=" + this.apiKey;
 
-        // Build conversation history based on settings
+        // פונקציה משוערת לספירת טוקנים
+        const estimateTokens = (text) => Math.ceil(text.length / 4);
+
         let conversationHistory = [];
-        if (this.settings.includeChatHistory) {
+        let currentChatMessages = [];
+        if (this.settings.includeAllChatHistory) {
+            Object.values(this.chats)
+                .filter(chat => chat.messages && chat.messages.length > 0)
+                .sort((a, b) => new Date(a.messages[0]?.timestamp || 0) - new Date(b.messages[0]?.timestamp || 0))
+                .forEach(chat => {
+                    if (chat.id === this.currentChatId) {
+                        currentChatMessages = [...chat.messages];
+                    } else {
+                        conversationHistory.push(...chat.messages.map(msg => ({
+                            ...msg,
+                            chatId: chat.id
+                        })));
+                        conversationHistory.push({
+                            id: "separator_" + chat.id,
+                            role: "system",
+                            content: "[END_CHAT: " + (chat.title || "צ'אט ללא כותרת") + "]",
+                            timestamp: chat.messages[chat.messages.length - 1]?.timestamp || new Date().toISOString(),
+                            chatId: chat.id
+                        });
+                    }
+                });
+            // הוספת הודעות הצ'אט הנוכחי, למעט ההודעה האחרונה
+            if (currentChatMessages.length > 0) {
+                conversationHistory.push(...currentChatMessages.slice(0, -1).map(msg => ({
+                    ...msg,
+                    chatId: this.currentChatId
+                })));
+            }
+
+
+            // הגבלת הודעות (רק אם מוגדר, בטווח 20, 50, 100, 200)
+            if (this.settings.maxMessages && [20, 50, 100, 200].includes(this.settings.maxMessages)) {
+                conversationHistory = conversationHistory.slice(-this.settings.maxMessages);
+                this.showToast("ההיסטוריה קוצרה ל-" + this.settings.maxMessages + " הודעות", "neutral");
+            }
+        } else if (this.settings.includeChatHistory) {
             const currentChat = this.chats[this.currentChatId];
             if (currentChat && currentChat.messages) {
-                // Get all messages except the newest one that's about to be sent
-                conversationHistory = [...currentChat.messages];
-                if (conversationHistory.length > 0) {
-                    conversationHistory.pop(); // Remove the last message
+                currentChatMessages = [...currentChat.messages];
+                // הוספת הודעות הצ'אט הנוכחי, למעט ההודעה האחרונה
+                conversationHistory = currentChatMessages.slice(0, -1).map(msg => ({
+                    ...msg,
+                    chatId: this.currentChatId
+                }));
+
+                // הגבלת טוקנים ל-חמש שישיות (רק אם מוגדר)
+                if (this.settings.maxTokens && !this.tokenLimitDisabled) {
+                    let totalTokens = conversationHistory.reduce((sum, msg) => sum + estimateTokens(msg.content), 0);
+                    const maxHistoryTokens = Math.floor(this.settings.maxTokens * 5 / 6);
+                    while (totalTokens > maxHistoryTokens && conversationHistory.length > 0) {
+                        conversationHistory.shift();
+                        totalTokens = conversationHistory.reduce((sum, msg) => sum + estimateTokens(msg.content), 0);
+                    }
+                    if (totalTokens > 0) {
+                        this.showToast("ההיסטוריה קוצרה בשל מגבלת הטוקנים", "neutral");
+                    }
+                }
+
+                // הגבלת הודעות (רק אם מוגדר, בטווח 20, 50, 100, 200)
+                if (this.settings.maxMessages && [20, 50, 100, 200].includes(this.settings.maxMessages)) {
+                    conversationHistory = conversationHistory.slice(-this.settings.maxMessages);
+                    this.showToast("ההיסטוריה קוצרה ל-" + this.settings.maxMessages + " הודעות", "neutral");
                 }
             }
         }
 
-        // Format messages for the API
+        console.log("Conversation History:", JSON.stringify(conversationHistory, null, 2));
+        console.log("Current Chat Messages:", JSON.stringify(currentChatMessages, null, 2));
+        const totalLength = conversationHistory.reduce((sum, msg) => sum + msg.content.length, 0);
+        console.log("Total history length (characters):", totalLength);
+        console.log("Estimated tokens:", estimateTokens(totalLength));
+
         const messages = conversationHistory.map(msg => ({
-            role: msg.role === 'assistant' ? 'model' : 'user',
+            role: msg.role === "assistant" ? "model" : msg.role === "system" ? "user" : "user",
             parts: [{ text: msg.content }]
         }));
 
-        // Add system prompt if available
-        if (this.systemPrompt) {
+        if (this.settings.includeAllChatHistory || this.settings.includeChatHistory) {
             messages.unshift({
-                role: 'user',
-                parts: [{ text: `System: ${this.CONSTANT_SYSTEM_PROMPT} ${this.systemPrompt}` }]
+                role: "user",
+                parts: [{
+                    text: "אם סופקה היסטוריה, השתמש בה לענות מדויק. הבחן בין שיחות נפרדות, כאשר כותרת השיחה היא הטקסט בתוך סוגריים של סימון סיום שיחה, ללא הקידומת. אל תזכיר סימוני סיום שיחה בתגובות. לשאלות על \"שיחה זו\", התמקד בהודעות הצ'אט הנוכחי. ענה בעברית. " + (this.systemPrompt || "")
+                }]
+            });
+        } else if (this.systemPrompt) {
+            messages.unshift({
+                role: "user",
+                parts: [{
+                    text: "ענה בעברית. " + this.systemPrompt
+                }]
             });
         }
 
-        // Prepare file attachments as base64
+        if ((this.settings.includeAllChatHistory || this.settings.includeChatHistory) &&
+            (message.toLowerCase().includes("היסטוריה") || message.toLowerCase().includes("זיכרון") || message.toLowerCase().includes("שאלתי"))) {
+            messages.push({
+                role: "user",
+                parts: [{
+                    text: "אם סופקה היסטוריה, השתמש בה לענות מדויק. התמקד בצ'אט הנוכחי לשאלות על \"שיחה זו\"."
+                }]
+            });
+        }
+
         const fileParts = this.files.length > 0 ? await Promise.all(this.files.map(async file => ({
             inlineData: {
                 mimeType: file.type,
@@ -1116,22 +1263,23 @@ class GeminiClone {
             }
         }))) : [];
 
-        // Add current message with files
         messages.push({
-            role: 'user',
+            role: "user",
             parts: [{ text: message }, ...fileParts]
         });
 
+        console.log("Messages sent to API:", JSON.stringify(messages, null, 2));
+
         const response = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 contents: messages,
                 generationConfig: {
                     temperature: this.settings.temperature,
                     topK: this.settings.topK,
                     topP: this.settings.topP,
-                    maxOutputTokens: this.tokenLimitDisabled ? undefined : this.settings.maxTokens,
+                    maxOutputTokens: this.tokenLimitDisabled ? undefined : this.settings.maxTokens
                 },
                 safetySettings: [
                     { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
@@ -1139,18 +1287,20 @@ class GeminiClone {
                 ]
             }),
             signal
-    });
-        
+        });
+
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.error?.message || 'Gemini API Error');
+            throw new Error(errorData.error?.message || "Gemini API Error");
         }
-        
+
         const data = await response.json();
+        console.log("API Response:", JSON.stringify(data, null, 2));
+
         if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
-            throw new Error('תגובה לא תקינה מ-Gemini API');
+            throw new Error("תגובה לא תקינה מ-Gemini API");
         }
-        
+
         return data.candidates[0].content.parts[0].text;
     }
 
@@ -1552,7 +1702,7 @@ class GeminiClone {
                 this.chats[this.currentChatId].messages = messages.slice(0, messageIndex);
                 this.saveChatData();
                 this.renderMessages();
-                this.showToast('ערוך את ההודעה ושלח שוב', 'neutral');
+                this.showToast('ערוך את ההודעה ושלח שוב', 'success');
             }
         }
     }
