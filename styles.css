@@ -39,17 +39,38 @@
 
 .history-item-title {
     display: flex;
-    align-items: center;
-    font-weight: 500;
+    align-items: flex-start; /* במקום center */
+    gap: 6px;
     font-size: 16px;
+    font-weight: 500;
 }
 
 .prompt-icon {
-    width: 18px;
-    height: 18px;
-    margin-left: 5px;
-    vertical-align: middle;
+    width: 32px;
+    height: 32px;
+    margin-left: 8px;
     object-fit: contain;
+    flex-shrink: 0;
+}
+
+.message-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: var(--bg-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    color: var(--text-secondary);
+    overflow: hidden; /* מבטיח שהתמונה לא תצא מהעיגול */
+}
+
+.assistant-avatar {
+    width: 100%;
+    height: 100%;
+    object-fit: contain; /* שומר על פרופורציות התמונה */
+    margin: auto; /* ממקם את התמונה במרכז העיגול */
 }
 
 .history-settings-inline {

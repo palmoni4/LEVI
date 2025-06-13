@@ -2,8 +2,8 @@ class GeminiClone {
     constructor() {
         // מפת מילות מפתח ואייקונים עבור systemPrompt
         this.iconMap = {
-            'בחור ישיבה מבוגר': 'nati.jpg',
-            'טראמפ': 'trump.jpg'
+            'בחור ישיבה מבוגר': { iconPath: 'nati.jpg', label: 'נתי' },
+            'טראמפ': { iconPath: 'trump.jpg', label: 'טראמפ' }
         };
         this.currentChatId = null;
         this.chats = JSON.parse(localStorage.getItem('gemini-chats') || '{}');
@@ -495,14 +495,23 @@ class GeminiClone {
     }
 
     getPromptIcon(systemPrompt) {
-        if (!systemPrompt) return '';
+        console.log(`getPromptIcon called with systemPrompt: ${systemPrompt}`); // דיבאג
+        if (!systemPrompt) return { iconHtml: '', label: 'Gemini' };
         const promptLower = systemPrompt.toLowerCase();
-        for (const [keyword, iconPath] of Object.entries(this.iconMap)) {
+        for (const [keyword, { iconPath, label }] of Object.entries(this.iconMap)) {
             if (promptLower.includes(keyword.toLowerCase())) {
-                return `<img src="${iconPath}" alt="${keyword}" class="prompt-icon" style="width: 18px; height: 18px; margin-left: 5px; vertical-align: middle;">`;
+                console.log(`Match found for keyword: ${keyword}, iconPath: ${iconPath}`); // דיבאג
+                return {
+                    iconHtml: `<img src="${iconPath}" alt="${keyword}" class="prompt-icon" style="width: 18px; height: 18px; margin-left: 5px; vertical-align: middle;">`,
+                    label: label
+                };
             }
         }
-        return '';
+        console.log('No match found, returning default'); // דיבאג
+        return {
+            iconHtml: '',
+            label: 'Gemini'
+        };
     }
 
     importHistoryAndSettings(data) {
@@ -510,7 +519,6 @@ class GeminiClone {
             this.showToast('מבנה קובץ לא תקין', 'error');
             return;
         }
-
         // Create a copy of existing chats
         const mergedChats = { ...this.chats };
 
@@ -1377,9 +1385,15 @@ class GeminiClone {
     createMessageHTML(message) {
         const isUser = message.role === 'user';
         const time = new Date(message.timestamp).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
-        const avatar = isUser ? '<span>אתה</span>' : '<span class="material-icons">auto_awesome</span>';
-        const senderName = isUser ? 'אתה' : 'Gemini';
-        
+        const systemPrompt = this.chats[this.currentChatId]?.systemPrompt || '';
+        const promptIcon = this.getPromptIcon(systemPrompt);
+        const avatar = isUser 
+            ? '<span>אתה</span>' 
+            : promptIcon.iconHtml 
+                ? `<img src="${promptIcon.iconHtml.match(/src="([^"]+)"/)?.[1]}" alt="עוזר" class="assistant-avatar">`
+                : '<span class="material-icons assistant-icon">auto_awesome</span>';
+        const senderName = isUser ? 'אתה' : promptIcon.label;
+    
         let filesHtml = '';
         if (isUser && message.files && message.files.length) {
             filesHtml = `<div class="file-preview-list" style="margin-top:8px;">` +
@@ -1733,7 +1747,7 @@ class GeminiClone {
         const chatArray = Object.values(this.chats);
         const historyHeader = document.querySelector('.history-header');
         const searchWrapper = document.querySelector('.search-wrapper');
-    
+
         if (chatArray.length === 0) {
             if (historyHeader) historyHeader.style.display = 'none';
             if (searchWrapper) searchWrapper.style.display = 'none';
@@ -1745,15 +1759,18 @@ class GeminiClone {
         if (searchWrapper) searchWrapper.style.display = 'block';
 
         const sortedChats = chatArray.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
-        this.chatHistory.innerHTML = sortedChats.map(chat => `
-            <div class="history-item ${chat.id === this.currentChatId ? 'active' : ''}" data-chat-id="${chat.id}">
-                <div class="history-item-title">${this.getPromptIcon(chat.systemPrompt)}${chat.title}</div>
-                <div class="history-item-preview">${this.getChatSummary(chat)}</div>
-                <button class="delete-chat-btn" data-chat-id="${chat.id}" title="מחק צ'אט">
-                    <span class="material-icons">delete</span>
-                </button>
-            </div>
-        `).join('');
+        this.chatHistory.innerHTML = sortedChats.map(chat => {
+            console.log(`Rendering chat ID: ${chat.id}, SystemPrompt: ${chat.systemPrompt}, IconHtml: ${this.getPromptIcon(chat.systemPrompt).iconHtml}`); // דיבאג
+            return `
+                <div class="history-item ${chat.id === this.currentChatId ? 'active' : ''}" data-chat-id="${chat.id}">
+                    <div class="history-item-title">${this.getPromptIcon(chat.systemPrompt).iconHtml}${chat.title}</div>
+                    <div class="history-item-preview">${this.getChatSummary(chat)}</div>
+                    <button class="delete-chat-btn" data-chat-id="${chat.id}" title="מחק צ'אט">
+                        <span class="material-icons">delete</span>
+                    </button>
+                </div>
+            `;
+        }).join('');
 
         this.bindChatHistoryEvents();
     }
