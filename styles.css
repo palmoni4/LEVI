@@ -238,8 +238,8 @@ mark {
     left: 0px;
     width: 100%;
     display: flex;
-    justify-content: flex-start;
-    gap: 3px; /* רווח בין הכפתורים */
+    justify-content: center;
+    gap: 6px; /* רווח בין הכפתורים */
 }
 
 .history-footer .icon-btn {
