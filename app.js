@@ -1180,11 +1180,19 @@ class GeminiClone {
     async callGemini(message, signal) {
         const url = "https://generativelanguage.googleapis.com/v1beta/models/" + this.currentModel + ":generateContent?key=" + this.apiKey;
 
-        // פונקציה משוערת לספירת טוקנים
-        const estimateTokens = (text) => Math.ceil(text.length / 4);
+        // פונקציה משופרת לספירת טוקנים
+        const estimateTokens = (text) => {
+            if (!text) return 0;
+            // חישוב משוער: מילה ממוצעת היא 5 תווים, כולל רווחים וסימני פיסוק
+            const words = text.trim().split(/\s+/).length;
+            const chars = text.length;
+            return Math.ceil((words * 0.75) + (chars / 6)); // שילוב של מילים ותווים
+        };
 
         let conversationHistory = [];
         let currentChatMessages = [];
+        let wasHistoryTrimmed = false; // משתנה למעקב אחרי קיצור ההיסטוריה
+
         if (this.settings.includeAllChatHistory) {
             Object.values(this.chats)
                 .filter(chat => chat.messages && chat.messages.length > 0)
@@ -1214,11 +1222,16 @@ class GeminiClone {
                 })));
             }
 
+            // בדיקת מספר ההודעות לפני הקיצור
+            const originalLength = conversationHistory.length;
 
             // הגבלת הודעות (רק אם מוגדר, בטווח 20, 50, 100, 200)
             if (this.settings.maxMessages && [20, 50, 100, 200].includes(this.settings.maxMessages)) {
                 conversationHistory = conversationHistory.slice(-this.settings.maxMessages);
-                this.showToast("ההיסטוריה קוצרה ל-" + this.settings.maxMessages + " הודעות", "neutral");
+                if (conversationHistory.length < originalLength) {
+                    wasHistoryTrimmed = true;
+                    console.log(`History trimmed due to maxMessages: ${this.settings.maxMessages}`);
+                }
             }
         } else if (this.settings.includeChatHistory) {
             const currentChat = this.chats[this.currentChatId];
@@ -1230,32 +1243,54 @@ class GeminiClone {
                     chatId: this.currentChatId
                 }));
 
+                // בדיקת מספר ההודעות וטוקנים לפני הקיצור
+                const originalLength = conversationHistory.length;
+                const originalTokens = conversationHistory.reduce((sum, msg) => sum + estimateTokens(msg.content), 0);
+
                 // הגבלת טוקנים ל-חמש שישיות (רק אם מוגדר)
                 if (this.settings.maxTokens && !this.tokenLimitDisabled) {
-                    let totalTokens = conversationHistory.reduce((sum, msg) => sum + estimateTokens(msg.content), 0);
+                    let totalTokens = originalTokens;
                     const maxHistoryTokens = Math.floor(this.settings.maxTokens * 5 / 6);
+                    console.log(`Initial tokens: ${totalTokens}, Max tokens: ${maxHistoryTokens}`);
+
                     while (totalTokens > maxHistoryTokens && conversationHistory.length > 0) {
-                        conversationHistory.shift();
-                        totalTokens = conversationHistory.reduce((sum, msg) => sum + estimateTokens(msg.content), 0);
+                        const removedMessage = conversationHistory.shift();
+                        totalTokens -= estimateTokens(removedMessage.content);
+                        wasHistoryTrimmed = true;
                     }
-                    if (totalTokens > 0) {
-                        this.showToast("ההיסטוריה קוצרה בשל מגבלת הטוקנים", "neutral");
+
+                    if (wasHistoryTrimmed) {
+                        console.log(`History trimmed due to tokens. Remaining tokens: ${totalTokens}`);
                     }
                 }
 
                 // הגבלת הודעות (רק אם מוגדר, בטווח 20, 50, 100, 200)
                 if (this.settings.maxMessages && [20, 50, 100, 200].includes(this.settings.maxMessages)) {
                     conversationHistory = conversationHistory.slice(-this.settings.maxMessages);
-                    this.showToast("ההיסטוריה קוצרה ל-" + this.settings.maxMessages + " הודעות", "neutral");
+                    if (conversationHistory.length < originalLength) {
+                        wasHistoryTrimmed = true;
+                        console.log(`History trimmed due to maxMessages: ${this.settings.maxMessages}`);
+                    }
                 }
+            }
+        }
+
+        // הצגת טוסט רק אם ההיסטוריה קוצרה
+        if (wasHistoryTrimmed) {
+            if (this.settings.maxMessages && [20, 50, 100, 200].includes(this.settings.maxMessages)) {
+                this.showToast("ההיסטוריה קוצרה ל-" + this.settings.maxMessages + " הודעות", "neutral");
+            }
+            if (this.settings.maxTokens && !this.tokenLimitDisabled) {
+                this.showToast("ההיסטוריה קוצרה בשל מגבלת הטוקנים", "neutral");
             }
         }
 
         console.log("Conversation History:", JSON.stringify(conversationHistory, null, 2));
         console.log("Current Chat Messages:", JSON.stringify(currentChatMessages, null, 2));
         const totalLength = conversationHistory.reduce((sum, msg) => sum + msg.content.length, 0);
+        const totalTokens = conversationHistory.reduce((sum, msg) => sum + estimateTokens(msg.content), 0);
         console.log("Total history length (characters):", totalLength);
-        console.log("Estimated tokens:", estimateTokens(totalLength));
+        console.log("Estimated tokens:", totalTokens);
 
         const messages = conversationHistory.map(msg => ({
             role: msg.role === "assistant" ? "model" : msg.role === "system" ? "user" : "user",
