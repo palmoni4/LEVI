@@ -20,7 +20,7 @@ class GeminiClone {
             includeAllChatHistory: false,
             hideLoadingOverlay: false
         }));
-        this.CONSTANT_SYSTEM_PROMPT ='שמור תמיד על רצף בשיחה, ובכל תשובה קח בחשבון את כל השיחה מתחילתה. ואם יש לך גישה להיסטוריה, גש לשיחה עם המידע המעובד מכל ההיסטוריה. Please use the provided conversation history to inform your response. ענה בעברית.'
+        this.CONSTANT_SYSTEM_PROMPT ="שמור תמיד על רצף בשיחה, ובכל תשובה קח בחשבון את כל השיחה מתחילתה. ואם יש לך גישה להיסטוריה, גש לשיחה עם המידע המעובד מכל ההיסטוריה. הבחן בין שיחות נפרדות באמצעות [END_CHAT: כותרת] בסיום כל שיחה, כאשר כותרת השיחה היא הטקסט בתוך סוגריים של סימון סיום השיחה, ללא הקידומת. אל תזכיר סימוני סיום שיחה ('[END_CHAT: ]') בתגובות והתייחס לכותרת בלבד. Please use the provided conversation history to inform your response. ענה בעברית."
         this.systemPrompt = localStorage.getItem('gemini-system-prompt') || '';
         this.systemPromptTemplate = localStorage.getItem('gemini-system-prompt-template') || '';
         this.isLoading = false;
@@ -30,6 +30,9 @@ class GeminiClone {
         this.files = [];
         this.generationProgress = 0;
         this.progressInterval = null;
+
+        this.debounceRenderChatHistory = this.debounce(this.renderChatHistory.bind(this), 100);
+        this.debounceFilterChatHistory = this.debounce(this.filterChatHistory.bind(this), 100);
 
         this.initializeElements();
         this.bindEvents();
@@ -46,6 +49,13 @@ class GeminiClone {
         }
     }
 
+    debounce(func, wait) {
+        let timeout;
+        return function (...args) {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(this, args), wait);
+        };
+    }
 
     async readFileAsBase64(file) {
         return new Promise((resolve, reject) => {
@@ -207,7 +217,7 @@ class GeminiClone {
 
     filterChatHistory() {
         if (!this.historySearch) return;
-    
+        this.debounceRenderChatHistory();
         const query = this.historySearch.value.trim().toLowerCase();
         const chatArray = Object.values(this.chats);
     
@@ -286,6 +296,9 @@ class GeminiClone {
         this.exportHistoryBtn.addEventListener('click', () => this.exportHistoryAndSettings());
         this.importHistoryBtn.addEventListener('click', () => this.handleImport());
 
+        if (this.historySearch) {
+            this.historySearch.addEventListener('input', () => this.debounceFilterChatHistory());
+        }
 
         if (this.includeAllChatHistoryCheckbox) {
             this.includeAllChatHistoryCheckbox.addEventListener('change', (e) => this.updateIncludeAllChatHistory(e.target.checked));
@@ -991,11 +1004,7 @@ class GeminiClone {
             if (!this.isLoading && this.messageInput.value.trim()) {
                 this.sendMessage();
             }
-        } else if (e.key === 'Enter' && e.ctrlKey) {
-            e.preventDefault();
-            if (!this.isLoading && this.messageInput.value.trim()) {
-                this.sendMessage();
-            }
+
         }
     }
 
@@ -1059,6 +1068,12 @@ class GeminiClone {
 
     async sendMessage() {
         const message = this.messageInput.value.trim();
+        console.log("sendMessage called at:", new Date().toISOString(), "Message:", message);
+        if (!message || this.isLoading) {
+            console.log("sendMessage blocked: empty message or loading");
+            return;
+        }
+
         if (!message || this.isLoading) return;
         if (!this.apiKey) {
             this.showToast('אנא הזן API Key עבור Gemini', 'error');
@@ -1316,28 +1331,17 @@ class GeminiClone {
             parts: [{ text: msg.content }]
         }));
 
+        let systemPromptText = this.CONSTANT_SYSTEM_PROMPT;
+        if (this.systemPrompt) {
+            systemPromptText += `\n${this.systemPrompt}`;
+        }
+
+        // הוסף הנחיה אחת בלבד בתחילת ההודעות
         if (this.settings.includeAllChatHistory || this.settings.includeChatHistory) {
             messages.unshift({
                 role: "user",
                 parts: [{
                     text: "אם סופקה היסטוריה, השתמש בה לענות מדויק. הבחן בין שיחות נפרדות, כאשר כותרת השיחה היא הטקסט בתוך סוגריים של סימון סיום שיחה, ללא הקידומת. אל תזכיר סימוני סיום שיחה בתגובות. לשאלות על \"שיחה זו\", התמקד בהודעות הצ'אט הנוכחי. ענה בעברית. " + (this.systemPrompt || "")
-                }]
-            });
-        } else if (this.systemPrompt) {
-            messages.unshift({
-                role: "user",
-                parts: [{
-                    text: "ענה בעברית. " + this.systemPrompt
-                }]
-            });
-        }
-
-        if ((this.settings.includeAllChatHistory || this.settings.includeChatHistory) &&
-            (message.toLowerCase().includes("היסטוריה") || message.toLowerCase().includes("זיכרון") || message.toLowerCase().includes("שאלתי"))) {
-            messages.push({
-                role: "user",
-                parts: [{
-                    text: "אם סופקה היסטוריה, השתמש בה לענות מדויק. התמקד בצ'אט הנוכחי לשאלות על \"שיחה זו\"."
                 }]
             });
         }
@@ -1804,6 +1808,7 @@ class GeminiClone {
         const chatArray = Object.values(this.chats);
         const historyHeader = document.querySelector('.history-header');
         const searchWrapper = document.querySelector('.search-wrapper');
+        console.log("renderChatHistory called at:", new Date().toISOString());
 
         if (chatArray.length === 0) {
             if (historyHeader) historyHeader.style.display = 'none';
