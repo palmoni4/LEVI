@@ -805,7 +805,6 @@ class GeminiClone {
             const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${this.apiKey}`);
             if (response.ok) {
                 this.showApiStatus('API Key תקף ומחובר', 'success');
-                this.showToast('API Key נשמר בהצלחה', 'success'); // הודעה לאחר בדיקה מוצלחת
             } else {
                 this.showApiStatus('API Key לא תקף', 'error');
             }
