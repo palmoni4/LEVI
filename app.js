@@ -34,7 +34,6 @@ class GeminiClone {
             includeAllChatHistory: false,
             hideLoadingOverlay: false
         }));
-        this.CONSTANT_SYSTEM_PROMPT ="שמור תמיד על רצף בשיחה, ובכל תשובה קח בחשבון את כל השיחה מתחילתה. ואם יש לך גישה להיסטוריה, גש לשיחה עם המידע המעובד מכל ההיסטוריה. הבחן בין שיחות נפרדות באמצעות [END_CHAT: כותרת] בסיום כל שיחה, כאשר כותרת השיחה היא הטקסט בתוך סוגריים של סימון סיום השיחה, ללא הקידומת. אל תזכיר סימוני סיום שיחה ('[END_CHAT: ]') בתגובות והתייחס לכותרת בלבד. Please use the provided conversation history to inform your response. ענה בעברית."
         this.systemPrompt = localStorage.getItem('gemini-system-prompt') || '';
         this.systemPromptTemplate = localStorage.getItem('gemini-system-prompt-template') || '';
         this.isLoading = false;
@@ -45,6 +44,7 @@ class GeminiClone {
         this.generationProgress = 0;
         this.progressInterval = null;
         this.searchQuery = '';
+        this.initializePageSpecificSettings();
 
         this.debounceRenderChatHistory = this.debounce(this.renderChatHistory.bind(this), 100);
         this.debounceFilterChatHistory = this.debounce(this.filterChatHistory.bind(this), 100);
@@ -62,6 +62,21 @@ class GeminiClone {
         if (editChatTitleBtn) {
             editChatTitleBtn.style.display = 'none';
         }
+    }
+
+    initializePageSpecificSettings() {
+        const pageConfig = document.querySelector('meta[name="page-config"]')?.getAttribute('content');
+        if (pageConfig === 'chat-page') {
+            // הגדרות ספציפיות לדף הראשי
+            this.CONSTANT_SYSTEM_PROMPT ="שמור תמיד על רצף בשיחה, ובכל תשובה קח בחשבון את כל השיחה מתחילתה. ענה בעברית. אם יש לך גישה להיסטוריה, גש לשיחה עם המידע המעובד מכל ההיסטוריה. הבחן בין שיחות נפרדות באמצעות [END_CHAT: כותרת] בסיום כל שיחה, כאשר כותרת השיחה היא הטקסט בתוך סוגריים של סימון סיום השיחה, ללא הקידומת. אל תזכיר סימוני סיום שיחה ('[END_CHAT: ]') בתגובות והתייחס לכותרת בלבד. Please use the provided conversation history to inform your response."
+        } else if (pageConfig === 'nati-page') {
+            // הגדרות ספציפיות לדף ההגדרות
+            this.CONSTANT_SYSTEM_PROMPT = "אתה 'נתי', בחור ישיבה מבוגר רווק, עייף, ועצבני על כל העולם. ענה תשובות שנונות ועוקצות. 'רד' על המשתמש. העלב אותו בכל הזדמנות ודקור אותו במדקרות פה. צלה אותו ואל תתאפק. אל תתיחס אל עצמך כאל מודל אלא כבחור ישיבה רווק מבוגר. ענה בנוסח ישיבתי ועוקצני. אבל אל תשתמש במילים לא ראויות. ענה בצורה כשרה.";
+        } else if (pageConfig === 'trump-page') {
+            // הגדרות ספציפיות לדף ההגדרות
+            this.CONSTANT_SYSTEM_PROMPT = "אתה דונלד טראמפ שמדבר בעברית. אתה עונה תשובות בניסוח טראמפ ומפורטות על עצמך. אל תתיחס אל עצמך כאל מודל אלא כטראמפ.";
+        }
+        this.saveSettings();
     }
 
     debounce(func, wait) {
@@ -1366,24 +1381,23 @@ class GeminiClone {
         console.log("Estimated tokens:", totalTokens);
 
         const messages = conversationHistory.map(msg => ({
-            role: msg.role === "assistant" ? "model" : msg.role === "system" ? "user" : "user",
+            role: msg.role === "assistant" ? "model" : "user", // הסרת "system", שימוש ב-"user"
             parts: [{ text: msg.content }]
         }));
 
-        let systemPromptText = this.CONSTANT_SYSTEM_PROMPT;
+        // בניית הנחיות המערכת
+        let systemPromptText = this.HIDDEN_SYSTEM_PROMPT + this.CONSTANT_SYSTEM_PROMPT;
         if (this.systemPrompt) {
             systemPromptText += `\n${this.systemPrompt}`;
         }
 
-        // הוסף הנחיה אחת בלבד בתחילת ההודעות
-        if (this.settings.includeAllChatHistory || this.settings.includeChatHistory) {
-            messages.unshift({
-                role: "user",
-                parts: [{
-                    text: "אם סופקה היסטוריה, השתמש בה לענות מדויק. הבחן בין שיחות נפרדות, כאשר כותרת השיחה היא הטקסט בתוך סוגריים של סימון סיום שיחה, ללא הקידומת. אל תזכיר סימוני סיום שיחה בתגובות. לשאלות על \"שיחה זו\", התמקד בהודעות הצ'אט הנוכחי. ענה בעברית. " + (this.systemPrompt || "")
-                }]
-            });
-        }
+        // הוספת הנחיות המערכת תמיד, עם תפקיד "user"
+        messages.unshift({
+            role: "user",
+            parts: [{
+                text: "הנחיית מערכת: " + systemPromptText // הוספת קידומת להבהרה
+            }]
+        });
 
         const fileParts = this.files.length > 0 ? await Promise.all(this.files.map(async file => ({
             inlineData: {
