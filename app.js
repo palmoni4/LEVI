@@ -2,9 +2,23 @@ class GeminiClone {
     constructor() {
         // מפת מילות מפתח ואייקונים עבור systemPrompt
         this.iconMap = {
-            'בחור ישיבה מבוגר': { iconPath: 'nati.jpg', label: 'נתי' },
-            'טראמפ': { iconPath: 'trump.jpg', label: 'טראמפ' }
+            'בחור ישיבה מבוגר': {
+                iconPath: 'nati.jpg',
+                label: 'נתי',
+                likeMessage: 'סוף סוף אתה מדבר לעניין ויודע את מי להעריך...',
+                dislikeMessage: 'אתה לא מתבייש? לדסלייק אותי??? מי אתה בכלל???',
+                feedbackAsAlert: true
+            },
+
+            'טראמפ': {
+                iconPath: 'trump.jpg',
+                label: 'טראמפ',
+                likeMessage: 'תודה! אני תמיד צודק, כולם יודעים את זה.',
+                dislikeMessage: 'פייק ניוז! לגמרי פייק ניוז! הם פשוט מקנאים.',
+                feedbackAsAlert: false
+            }
         };
+
         this.currentChatId = null;
         this.chats = JSON.parse(localStorage.getItem('gemini-chats') || '{}');
         this.apiKey = localStorage.getItem('gemini-api-key') || '';
@@ -120,6 +134,28 @@ class GeminiClone {
         }, 5000);
     }
 
+    getFeedbackMessages(systemPrompt) {
+        if (!systemPrompt) return {
+            likeMessage: 'תודה על המשוב! אני שמח שאהבת!',
+            dislikeMessage: 'תודה על המשוב. אשתדל להיות יותר טוב.',
+            feedbackAsAlert: false // ברירת מחדל: toast
+        };
+        const promptLower = systemPrompt.toLowerCase();
+        for (const [keyword, config] of Object.entries(this.iconMap)) {
+            if (promptLower.includes(keyword.toLowerCase())) {
+                return {
+                    likeMessage: config.likeMessage,
+                    dislikeMessage: config.dislikeMessage,
+                    feedbackAsAlert: config.feedbackAsAlert
+                };
+            }
+        }
+        return {
+            likeMessage: 'תודה על המשוב! אני שמח שאהבת!',
+            dislikeMessage: 'תודה על המשוב. אשתדל להיות יותר טוב.',
+            feedbackAsAlert: false // ברירת מחדל: toast
+        };
+    }
 
     initializeElements() {
         // Main UI elements
@@ -1737,48 +1773,57 @@ class GeminiClone {
                 });
             }
         });
-    document.querySelectorAll('.likes-dislikes').forEach(container => {
-        const likeBtn = container.querySelector('.like-btn');
-        const dislikeBtn = container.querySelector('.dislike-btn');
-        const messageEl = container.closest('.message');
-        if (!messageEl) return;
+        document.querySelectorAll('.likes-dislikes').forEach(container => {
+            const likeBtn = container.querySelector('.like-btn');
+            const dislikeBtn = container.querySelector('.dislike-btn');
+            const messageEl = container.closest('.message');
+            if (!messageEl) return;
 
-        const messageId = messageEl.getAttribute('data-message-id');
-        const chat = this.chats[this.currentChatId];
-        if (!chat || !chat.messages) return;
+            const messageId = messageEl.getAttribute('data-message-id');
+            const chat = this.chats[this.currentChatId];
+            if (!chat || !chat.messages) return;
 
-        const message = chat.messages.find(m => m.id === messageId);
-        if (!message) return;
+            const message = chat.messages.find(m => m.id === messageId);
+            if (!message) return;
 
-        const updateButtons = () => {
-            likeBtn.classList.toggle('active', message.vote === 'like');
-            dislikeBtn.classList.toggle('active', message.vote === 'dislike');
-        };
+            const systemPrompt = chat.systemPrompt || '';
+            const { likeMessage, dislikeMessage, feedbackAsAlert } = this.getFeedbackMessages(systemPrompt);
 
-        likeBtn.addEventListener('click', () => {
-            const wasSelected = message.vote === 'like';
-            message.vote = wasSelected ? null : 'like';
-            this.saveChatData();
-            if (!wasSelected) {
-                this.showToast('תודה על המשוב! אני שמח שאהבת!');
-            }
+            const updateButtons = () => {
+                likeBtn.classList.toggle('active', message.vote === 'like');
+                dislikeBtn.classList.toggle('active', message.vote === 'dislike');
+            };
+
+            likeBtn.addEventListener('click', () => {
+                const wasSelected = message.vote === 'like';
+                message.vote = wasSelected ? null : 'like';
+                this.saveChatData();
+                if (!wasSelected) {
+                    if (feedbackAsAlert) {
+                        alert(likeMessage);
+                    } else {
+                        this.showToast(likeMessage, 'success');
+                    }
+                }
+                updateButtons();
+            });
+
+            dislikeBtn.addEventListener('click', () => {
+                const wasSelected = message.vote === 'dislike';
+                message.vote = wasSelected ? null : 'dislike';
+                this.saveChatData();
+                if (!wasSelected) {
+                    if (feedbackAsAlert) {
+                        alert(dislikeMessage);
+                    } else {
+                        this.showToast(dislikeMessage, 'neutral');
+                    }
+                }
+                updateButtons();
+            });
+
             updateButtons();
         });
-
-        dislikeBtn.addEventListener('click', () => {
-            const wasSelected = message.vote === 'dislike';
-            message.vote = wasSelected ? null : 'dislike';
-            this.saveChatData();
-            if (!wasSelected) {
-                this.showToast('תודה על המשוב. אשתדל להיות יותר טוב.', 'neutral');
-            }
-            updateButtons();
-        });
-
-        updateButtons();
-    });
-
-
     }
 
     editMessage(messageId) {
