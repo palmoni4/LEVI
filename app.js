@@ -805,11 +805,13 @@ class GeminiClone {
             const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${this.apiKey}`);
             if (response.ok) {
                 this.showApiStatus('API Key תקף ומחובר', 'success');
+                this.showToast('API Key נשמר בהצלחה', 'success'); // הודעה לאחר בדיקה מוצלחת
             } else {
                 this.showApiStatus('API Key לא תקף', 'error');
             }
         } catch (error) {
             this.showApiStatus('שגיאה בבדיקת API Key', 'error');
+            this.showToast('שגיאה בבדיקת API Key', 'error');
         }
     }
 
@@ -823,10 +825,10 @@ class GeminiClone {
         this.apiKey = key;
         localStorage.setItem('gemini-api-key', key);
         if (key.trim()) {
-            this.validateApiKey();
-            this.showToast('API Key נשמר בהצלחה', 'success');
+            this.validateApiKey(); // מפעיל בדיקה, ההודעה תוצג ב-validateApiKey
         } else {
             this.apiStatus.style.display = 'none';
+            this.showToast('מפתח ה-API הוסר', 'neutral');
         }
     }
 
