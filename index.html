@@ -16,9 +16,9 @@
     <!-- After the sidebar div and before main-content div -->
     <div class="history-sidebar" id="historySidebar">
         <div class="sidebar-header">
-            <button class="sidebar-toggle" id="historyToggle" title="סגור/פתח היסטוריה">
-                <!-- span class="material-icons">history</span -->
-            </button>
+        <button class="history-toggle" title="סגור/פתח הסטוריה">
+            <span class="material-icons">menu</span>
+        </button>
             <div class="logo">
                 <span class="material-icons">history</span>
                 <span class="logo-text">היסטוריית צ'אט</span>
@@ -38,16 +38,19 @@
             </div>
             <div class="history-list" id="historyList"></div>
         </div>
+        <div class="chat-history" id="historyList"></div>
         <div class="history-footer">
-            <button id="importHistoryBtn" class="icon-btn" title="ייבא היסטוריה והגדרות">
-                <span class="material-icons">upload</span> יבא נתונים
+            <button class="icon-btn" id="importHistoryBtn">
+                <span class="material-icons">upload</span>
+                <span>יבא נתונים</span>
             </button>
-            <button id="exportHistoryBtn" class="icon-btn" title="ייצא היסטוריה והגדרות">
-                <span class="material-icons">download</span> יצא נתונים
+            <button class="icon-btn" id="exportHistoryBtn">
+                <span class="material-icons">download</span>
+                <span>יצא נתונים</span>
             </button>
         </div>
     </div>
-
+    <main class="main-content" id="mainContent">
     <!-- Sidebar -->
     <div class="sidebar" id="sidebar">
         <div class="sidebar-header">

@@ -127,6 +127,8 @@ class GeminiClone {
         this.exportHistoryBtn = document.getElementById('exportHistoryBtn');
         this.importHistoryBtn = document.getElementById('importHistoryBtn');
         this.includeAllChatHistoryCheckbox = document.getElementById('includeAllChatHistory');
+        this.historySidebar = document.querySelector('.history-sidebar');
+        this.historyToggle = document.querySelector('.history-toggle');
         
         // API & Model Settings
         this.geminiApiKey = document.getElementById('geminiApiKey');
@@ -197,6 +199,12 @@ class GeminiClone {
         this.includeSystemPromptsCheckbox = document.getElementById('includeSystemPrompts');
     }
 
+    toggleHistorySidebar() {
+        this.historySidebar.classList.toggle('collapsed');
+        this.mainContent.classList.toggle('history-collapsed');
+        localStorage.setItem('history-sidebar-collapsed', this.historySidebar.classList.contains('collapsed'));
+    }
+
     filterChatHistory() {
         if (!this.historySearch) return;
     
@@ -264,6 +272,11 @@ class GeminiClone {
     bindEvents() {
         // Sidebar controls
         this.sidebarToggle.addEventListener('click', () => this.toggleSidebar());
+        if (this.historyToggle) { // הוסף
+            this.historyToggle.addEventListener('click', () => this.toggleHistorySidebar());
+        } else {
+            console.warn('historyToggle element not found');
+        }
         this.newChatBtn.addEventListener('click', () => this.resetToWelcomeScreen());
         this.themeToggle.addEventListener('click', () => this.toggleTheme());
         this.luxuryToggle.addEventListener('click', () => this.toggleLuxuryMode());
@@ -272,6 +285,7 @@ class GeminiClone {
         this.hideLoadingOverlayCheckbox.addEventListener('change', (e) => this.updateHideLoadingOverlay(e.target.checked));
         this.exportHistoryBtn.addEventListener('click', () => this.exportHistoryAndSettings());
         this.importHistoryBtn.addEventListener('click', () => this.handleImport());
+
 
         if (this.includeAllChatHistoryCheckbox) {
             this.includeAllChatHistoryCheckbox.addEventListener('change', (e) => this.updateIncludeAllChatHistory(e.target.checked));
@@ -886,6 +900,11 @@ class GeminiClone {
         if (sidebarCollapsed) {
             this.sidebar.classList.add('collapsed');
             this.mainContent.classList.add('sidebar-collapsed');
+        }
+        const historySidebarCollapsed = localStorage.getItem('history-sidebar-collapsed') === 'true';
+        if (historySidebarCollapsed && this.historySidebar) {
+            this.historySidebar.classList.add('collapsed');
+            this.mainContent.classList.add('history-collapsed');
         }
     }
 

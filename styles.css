@@ -233,13 +233,70 @@ mark {
 }
 
 .history-footer {
-    position: absolute;
-    bottom: 10px; /* הצמד את הכפתורים 10px מהתחתית */
-    left: 0px;
-    width: 100%;
+    margin-top: auto; /* ממקם את הכפתורים בתחתית הסרגל */
+    padding: 16px;
     display: flex;
+    flex-direction: row; /* כפתורים זה לצד זה במצב לא מכווץ */
+    justify-content: space-between; /* רווח שווה בין הכפתורים */
+    gap: 0px;
+}
+
+.history-sidebar.collapsed .history-footer {
+    display: flex;
+    flex-direction: column; /* כפתורים אחד מעל השני */
+    align-items: center;
+    justify-content: flex-end;
+    margin-bottom: 20px;
+}
+
+.history-sidebar.collapsed .history-footer .icon-btn:hover {
+    transform: scale(1.1);
+    box-shadow: var(--shadow-intense);
+}
+
+
+.history-sidebar.collapsed .history-footer .icon-btn:hover {
+    background: var(--hover-color);
+    transform: scale(1.1);
+}
+
+.history-sidebar.collapsed .logo-text,
+.history-sidebar.collapsed .new-chat-btn span:not(.material-icons),
+.history-sidebar.collapsed .api-settings,
+.history-sidebar.collapsed .chat-history,
+.history-sidebar.collapsed .search-wrapper,
+.history-sidebar.collapsed .history-footer .icon-btn span:not(.material-icons) {
+    display: none;
+}
+
+.history-sidebar.collapsed .logo {
     justify-content: center;
-    gap: 6px; /* רווח בין הכפתורים */
+    width: 100%;
+    flex-direction: column;
+    margin-top: 10px; /* הורדת הלוגו שורה למטה */
+}
+
+.history-sidebar.collapsed .sidebar-header {
+    justify-content: center;
+    flex-direction: column; /* מיקום כפתור ה-toggle מעל הלוגו */
+}
+
+.history-toggle {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 12px;
+    border-radius: var(--border-radius-small);
+    color: var(--text-secondary);
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.history-toggle:hover {
+    background: var(--hover-color);
+    transform: scale(1.1);
 }
 
 .history-footer .icon-btn {
@@ -2190,4 +2247,8 @@ body {
     color: var(--accent-color, #f7b500); /* ברירת מחדל: זהב */
     text-shadow: none;
     opacity: 1;
+}
+
+.history-sidebar.collapsed .search-wrapper {
+    display: none !important;
 }
