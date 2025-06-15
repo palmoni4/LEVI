@@ -30,6 +30,7 @@ class GeminiClone {
         this.files = [];
         this.generationProgress = 0;
         this.progressInterval = null;
+        this.searchQuery = '';
 
         this.debounceRenderChatHistory = this.debounce(this.renderChatHistory.bind(this), 100);
         this.debounceFilterChatHistory = this.debounce(this.filterChatHistory.bind(this), 100);
@@ -217,6 +218,7 @@ class GeminiClone {
 
     filterChatHistory() {
         if (!this.historySearch) return;
+        this.searchQuery = this.historySearch.value.trim().toLowerCase();
         this.debounceRenderChatHistory();
         const query = this.historySearch.value.trim().toLowerCase();
         const chatArray = Object.values(this.chats);
@@ -247,7 +249,7 @@ class GeminiClone {
 
         this.chatHistory.innerHTML = results.map(chat => `
             <div class="history-item ${chat.id === this.currentChatId ? 'active' : ''}" data-chat-id="${chat.id}">
-                <div class="history-item-title">${this.getPromptIcon(chat.systemPrompt)}${highlight(chat.title)}</div>
+                <div class="history-item-title">${this.getPromptIcon(chat.systemPrompt).iconHtml}${highlight(chat.title)}</div>
                 <div class="history-item-preview">${highlight(this.getChatSummary(chat))}</div>
                 <button class="delete-chat-btn" data-chat-id="${chat.id}" title="מחק צ'אט">
                     <span class="material-icons">delete</span>
@@ -1805,6 +1807,11 @@ class GeminiClone {
 
 
     renderChatHistory() {
+        if (this.searchQuery) {
+            // אם יש שאילתת חיפוש פעילה, השתמש ב-filterChatHistory
+            this.filterChatHistory();
+            return;
+        }
         const chatArray = Object.values(this.chats);
         const historyHeader = document.querySelector('.history-header');
         const searchWrapper = document.querySelector('.search-wrapper');
