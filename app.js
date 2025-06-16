@@ -9,7 +9,6 @@ class GeminiClone {
                 dislikeMessage: 'אתה לא מתבייש? לדסלייק אותי??? מי אתה בכלל???',
                 feedbackAsAlert: true
             },
-
             'טראמפ': {
                 iconPath: 'trump.jpg',
                 label: 'טראמפ',
@@ -34,7 +33,14 @@ class GeminiClone {
             includeAllChatHistory: false,
             hideLoadingOverlay: false
         }));
-        this.systemPrompt = localStorage.getItem('gemini-system-prompt') || '';
+        // הגדרת systemPrompt בהתאם לדף
+        const pageConfig = document.querySelector('meta[name="page-config"]')?.getAttribute('content');
+        this.pageConfig = pageConfig;
+        if (pageConfig === 'chat-page') {
+            this.systemPrompt = localStorage.getItem('gemini-system-prompt') || '';
+        } else {
+            this.systemPrompt = ''; // אין systemPrompt נוסף עבור trump-page ו-nati-page
+        }
         this.systemPromptTemplate = localStorage.getItem('gemini-system-prompt-template') || '';
         this.isLoading = false;
         this.isLuxuryMode = localStorage.getItem('luxury-mode') === 'true';
@@ -65,16 +71,15 @@ class GeminiClone {
     }
 
     initializePageSpecificSettings() {
-        const pageConfig = document.querySelector('meta[name="page-config"]')?.getAttribute('content');
+        const pageConfig = this.pageConfig;
         if (pageConfig === 'chat-page') {
-            // הגדרות ספציפיות לדף הראשי
-            this.CONSTANT_SYSTEM_PROMPT ="שמור תמיד על רצף בשיחה, ובכל תשובה קח בחשבון את כל השיחה מתחילתה. ענה בעברית. אם יש לך גישה להיסטוריה, גש לשיחה עם המידע המעובד מכל ההיסטוריה. הבחן בין שיחות נפרדות באמצעות [END_CHAT: כותרת] בסיום כל שיחה, כאשר כותרת השיחה היא הטקסט בתוך סוגריים של סימון סיום השיחה, ללא הקידומת. אל תזכיר סימוני סיום שיחה ('[END_CHAT: ]') בתגובות והתייחס לכותרת בלבד. Please use the provided conversation history to inform your response."
+            this.CONSTANT_SYSTEM_PROMPT = "שמור תמיד על רצף בשיחה, ובכל תשובה קח בחשבון את כל השיחה מתחילתה. ענה בעברית. אם יש לך גישה להיסטוריה, גש לשיחה עם המידע המעובד מכל ההיסטוריה. הבחן בין שיחות נפרדות באמצעות [END_CHAT: כותרת] בסיום כל שיחה, כאשר כותרת השיחה היא הטקסט בתוך סוגריים של סימון סיום השיחה, ללא הקידומת. אל תזכיר סימוני סיום שיחה ('[END_CHAT: ]') בתגובות והתייחס לכותרת בלבד. Please use the provided conversation history to inform your response.";
         } else if (pageConfig === 'nati-page') {
-            // הגדרות ספציפיות לדף ההגדרות
-            this.CONSTANT_SYSTEM_PROMPT = "אתה 'נתי', בחור ישיבה מבוגר רווק, עייף, ועצבני על כל העולם. ענה תשובות שנונות ועוקצות. 'רד' על המשתמש. העלב אותו בכל הזדמנות ודקור אותו במדקרות פה. צלה אותו ואל תתאפק. אל תתיחס אל עצמך כאל מודל אלא כבחור ישיבה רווק מבוגר. ענה בנוסח ישיבתי ועוקצני. אבל אל תשתמש במילים לא ראויות. ענה בצורה כשרה.";
+            this.systemPrompt = "אתה 'נתי', בחור ישיבה מבוגר רווק, עייף, ועצבני על כל העולם. ענה תשובות שנונות ועוקצות. 'רד' על המשתמש. העלב אותו בכל הזדמנות ודקור אותו במדקרות פה. צלה אותו ואל תתאפק. אל תתיחס אל עצמך כאל מודל אלא כבחור ישיבה רווק מבוגר. ענה בנוסח ישיבתי ועוקצני. אבל אל תשתמש במילים לא ראויות. ענה בצורה כשרה.";
+            localStorage.removeItem('gemini-system-prompt'); // ודא שאין systemPrompt נוסף
         } else if (pageConfig === 'trump-page') {
-            // הגדרות ספציפיות לדף ההגדרות
-            this.CONSTANT_SYSTEM_PROMPT = "אתה דונלד טראמפ שמדבר בעברית. אתה עונה תשובות בניסוח טראמפ ומפורטות על עצמך. אל תתיחס אל עצמך כאל מודל אלא כטראמפ.";
+            this.systemPrompt = "אתה דונלד טראמפ שמדבר בעברית. אתה עונה תשובות בניסוח טראמפ ומפורטות על עצמך. אל תתיחס אל עצמך כאל מודל אלא כטראמפ.";
+            localStorage.removeItem('gemini-system-prompt'); // ודא שאין systemPrompt נוסף
         }
         this.saveSettings();
     }
@@ -388,8 +393,12 @@ class GeminiClone {
         // Settings controls
         this.geminiApiKey.addEventListener('input', (e) => this.saveApiKey(e.target.value));
         this.geminiModel.addEventListener('change', (e) => this.changeModel(e.target.value));
-        this.systemPromptTemplateSelect.addEventListener('change', (e) => this.changeSystemPromptTemplate(e.target.value));
-        this.systemPromptInput.addEventListener('input', (e) => this.saveSystemPrompt(e.target.value));
+        if (this.systemPromptTemplateSelect) {
+            this.systemPromptTemplateSelect.addEventListener('change', (e) => this.changeSystemPromptTemplate(e.target.value));
+        }
+        if (this.systemPromptInput) {
+            this.systemPromptInput.addEventListener('input', (e) => this.saveSystemPrompt(e.target.value));
+        }
         this.temperatureSlider.addEventListener('input', (e) => this.updateTemperature(e.target.value));
         this.maxTokensSlider.addEventListener('input', (e) => this.updateMaxTokens(e.target.value));
         this.topPSlider.addEventListener('input', (e) => this.updateTopP(e.target.value));
@@ -733,9 +742,8 @@ class GeminiClone {
         if (this.includeAllChatHistoryCheckbox) {
             this.includeAllChatHistoryCheckbox.checked = this.settings.includeAllChatHistory;
         }
-        // Load system prompt
-        this.systemPromptInput.value = this.systemPrompt;
-        this.systemPromptTemplateSelect.value = this.systemPromptTemplate;
+        if (this.systemPromptInput) this.systemPromptInput.value = this.systemPrompt; // בדיקה למניעת שגיאה
+        if (this.systemPromptTemplateSelect) this.systemPromptTemplateSelect.value = this.systemPromptTemplate;
         
         const tokenLimitCheckbox = document.getElementById('toggleTokenLimit');
         const tokenLimitRow = document.getElementById('maxTokensRow');
@@ -892,8 +900,10 @@ class GeminiClone {
     }
 
     saveSystemPrompt(prompt) {
-        this.systemPrompt = prompt;
-        localStorage.setItem('gemini-system-prompt', prompt);
+        if (this.pageConfig === 'chat-page') {
+            this.systemPrompt = prompt;
+            localStorage.setItem('gemini-system-prompt', prompt);
+        }
     }
 
     updateTemperature(value) {
@@ -1170,6 +1180,22 @@ class GeminiClone {
         this.abortController = new AbortController();
         
         try {
+            let systemPrompt;
+            if (this.pageConfig === 'chat-page') {
+                systemPrompt = this.CONSTANT_SYSTEM_PROMPT + (this.systemPrompt ? '\n' + this.systemPrompt : '');
+            } else {
+                systemPrompt = this.systemPrompt; // עבור trump-page ו-nati-page, השתמש ב-this.systemPrompt בלבד
+            }
+
+            // הכנת ההודעות ל-API כולל systemPrompt
+            const messages = [
+                { role: 'system', content: systemPrompt },
+                ...(this.settings.includeChatHistory ? this.chats[this.currentChatId].messages.map(msg => ({
+                    role: msg.role,
+                    content: msg.content
+                })) : [{ role: 'user', content: message }])
+            ];
+
             const response = await this.callGemini(message, this.abortController.signal);
             const assistantMessage = {
                 id: this.generateMessageId(),
