@@ -2631,10 +2631,11 @@ class GeminiClone {
 
         this.callGemini(lastUserMessage, this.abortController.signal)
             .then(response => {
+                let cleanedResponse = response.replace(/\[END_CHAT:\s*.*?\]/g, '').trim();
                 const assistantMessage = {
                     id: this.generateMessageId(),
                     role: 'assistant',
-                    content: response,
+                    content: cleanedResponse,
                     timestamp: new Date().toISOString(),
                     model: this.currentModel,
                     vote: null
