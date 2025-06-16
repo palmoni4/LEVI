@@ -1180,22 +1180,7 @@ class GeminiClone {
         this.abortController = new AbortController();
         
         try {
-            let systemPrompt;
-            if (this.pageConfig === 'chat-page') {
-                systemPrompt = this.CONSTANT_SYSTEM_PROMPT + (this.systemPrompt ? '\n' + this.systemPrompt : '');
-            } else {
-                systemPrompt = this.systemPrompt; // עבור trump-page ו-nati-page, השתמש ב-this.systemPrompt בלבד
-            }
-
-            // הכנת ההודעות ל-API כולל systemPrompt
-            const messages = [
-                { role: 'system', content: systemPrompt },
-                ...(this.settings.includeChatHistory ? this.chats[this.currentChatId].messages.map(msg => ({
-                    role: msg.role,
-                    content: msg.content
-                })) : [{ role: 'user', content: message }])
-            ];
-
+            // No longer building system prompt message here, it's handled in callGemini
             const response = await this.callGemini(message, this.abortController.signal);
             const assistantMessage = {
                 id: this.generateMessageId(),
@@ -1291,7 +1276,7 @@ class GeminiClone {
         this.loadingInterval = interval;
     }
 
-    async callGemini(message, signal) {
+    async callGemini(userMessageContent, signal) { // changed parameter name for clarity
         const url = "https://generativelanguage.googleapis.com/v1beta/models/" + this.currentModel + ":generateContent?key=" + this.apiKey;
 
         // פונקציה משופרת לספירת טוקנים
@@ -1321,7 +1306,7 @@ class GeminiClone {
                         })));
                         conversationHistory.push({
                             id: "separator_" + chat.id,
-                            role: "system",
+                            role: "system", // This "system" role is for internal chat history separation, not for Gemini API `system_instruction`
                             content: "[END_CHAT: " + (chat.title || "צ'אט ללא כותרת") + "]",
                             timestamp: chat.messages[chat.messages.length - 1]?.timestamp || new Date().toISOString(),
                             chatId: chat.id
@@ -1399,31 +1384,18 @@ class GeminiClone {
             }
         }
 
-        console.log("Conversation History:", JSON.stringify(conversationHistory, null, 2));
-        console.log("Current Chat Messages:", JSON.stringify(currentChatMessages, null, 2));
+        console.log("Conversation History (before API mapping):", JSON.stringify(conversationHistory, null, 2));
+        console.log("Current Chat Messages (before API mapping):", JSON.stringify(currentChatMessages, null, 2));
         const totalLength = conversationHistory.reduce((sum, msg) => sum + msg.content.length, 0);
         const totalTokens = conversationHistory.reduce((sum, msg) => sum + estimateTokens(msg.content), 0);
         console.log("Total history length (characters):", totalLength);
         console.log("Estimated tokens:", totalTokens);
 
-        const messages = conversationHistory.map(msg => ({
-            role: msg.role === "assistant" ? "model" : "user", // הסרת "system", שימוש ב-"user"
+        // Map conversation history to API expected format (user/model roles only)
+        const messagesForApi = conversationHistory.filter(msg => msg.role === 'user' || msg.role === 'assistant').map(msg => ({
+            role: msg.role === "assistant" ? "model" : "user",
             parts: [{ text: msg.content }]
         }));
-
-        // בניית הנחיות המערכת
-        let systemPromptText = this.HIDDEN_SYSTEM_PROMPT + this.CONSTANT_SYSTEM_PROMPT;
-        if (this.systemPrompt) {
-            systemPromptText += `\n${this.systemPrompt}`;
-        }
-
-        // הוספת הנחיות המערכת תמיד, עם תפקיד "user"
-        messages.unshift({
-            role: "user",
-            parts: [{
-                text: "הנחיית מערכת: " + systemPromptText // הוספת קידומת להבהרה
-            }]
-        });
 
         const fileParts = this.files.length > 0 ? await Promise.all(this.files.map(async file => ({
             inlineData: {
@@ -1432,29 +1404,49 @@ class GeminiClone {
             }
         }))) : [];
 
-        messages.push({
+        // Add the current user message with attached files
+        messagesForApi.push({
             role: "user",
-            parts: [{ text: message }, ...fileParts]
+            parts: [{ text: userMessageContent }, ...fileParts]
         });
 
-        console.log("Messages sent to API:", JSON.stringify(messages, null, 2));
+        // Build the system instruction for the API
+        let finalSystemInstruction = "";
+        if (this.pageConfig === 'chat-page') {
+            finalSystemInstruction = this.CONSTANT_SYSTEM_PROMPT + (this.systemPrompt ? '\n' + this.systemPrompt : '');
+        } else {
+            finalSystemInstruction = this.systemPrompt; // For trump-page and nati-page, use this.systemPrompt only
+        }
+
+        const requestBody = {
+            contents: messagesForApi,
+            generationConfig: {
+                temperature: this.settings.temperature,
+                topK: this.settings.topK,
+                topP: this.settings.topP,
+                maxOutputTokens: this.tokenLimitDisabled ? undefined : this.settings.maxTokens
+            },
+            safetySettings: [
+                { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
+                { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_MEDIUM_AND_ABOVE" }
+            ]
+        };
+
+        // Add system_instruction only if it's not empty or just whitespace
+        if (finalSystemInstruction.trim()) {
+            requestBody.system_instruction = { parts: [{ text: finalSystemInstruction.trim() }] };
+            console.log("System Instruction included:", finalSystemInstruction.trim()); // בדיקת לוג להנחיית המערכת
+        } else {
+             console.log("No System Instruction provided.");
+        }
+
+
+        console.log("Full API Request Body:", JSON.stringify(requestBody, null, 2)); // לוג מפורט לבדיקה
 
         const response = await fetch(url, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                contents: messages,
-                generationConfig: {
-                    temperature: this.settings.temperature,
-                    topK: this.settings.topK,
-                    topP: this.settings.topP,
-                    maxOutputTokens: this.tokenLimitDisabled ? undefined : this.settings.maxTokens
-                },
-                safetySettings: [
-                    { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
-                    { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_MEDIUM_AND_ABOVE" }
-                ]
-            }),
+            body: JSON.stringify(requestBody),
             signal
         });
 
@@ -1542,6 +1534,9 @@ class GeminiClone {
                         <span class="material-icons">${this.getFileIcon(f)}</span>
                         <span title="${f.name}">${f.name.length > 18 ? f.name.slice(0,15)+'...' : f.name}</span>
                         <span>(${this.formatFileSize(f.size)})</span>
+                        <button class="file-remove-btn" title="הסר" data-idx="${idx}">
+                            <span class="material-icons">close</span>
+                        </button>
                     </div>`
                 ).join('') + `</div>`;
         }
