@@ -1276,7 +1276,8 @@ class GeminiClone {
         this.loadingInterval = interval;
     }
 
-    async callGemini(userMessageContent, signal) { // changed parameter name for clarity
+    async callGemini(userMessageContent, signal) { 
+        // changed parameter name for clarity
         const url = "https://generativelanguage.googleapis.com/v1beta/models/" + this.currentModel + ":generateContent?key=" + this.apiKey;
 
         // פונקציה משופרת לספירת טוקנים
@@ -1461,7 +1462,7 @@ class GeminiClone {
         if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
             throw new Error("תגובה לא תקינה מ-Gemini API");
         }
-
+        responseText = responseText.replace(/\[END_CHAT: [^\]]+\]/g, '');
         return data.candidates[0].content.parts[0].text;
     }
 
