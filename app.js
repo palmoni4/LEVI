@@ -1297,15 +1297,14 @@ class GeminiClone {
         // פונקציה משופרת לספירת טוקנים
         const estimateTokens = (text) => {
             if (!text) return 0;
-            // חישוב משוער: מילה ממוצעת היא 5 תווים, כולל רווחים וסימני פיסוק
             const words = text.trim().split(/\s+/).length;
             const chars = text.length;
-            return Math.ceil((words * 0.75) + (chars / 6)); // שילוב של מילים ותווים
+            return Math.ceil((words * 0.75) + (chars / 6));
         };
 
         let conversationHistory = [];
         let currentChatMessages = [];
-        let wasHistoryTrimmed = false; // משתנה למעקב אחרי קיצור ההיסטוריה
+        let wasHistoryTrimmed = false;
 
         if (this.settings.includeAllChatHistory) {
             Object.values(this.chats)
@@ -1328,7 +1327,6 @@ class GeminiClone {
                         });
                     }
                 });
-            // הוספת הודעות הצ'אט הנוכחי, למעט ההודעה האחרונה
             if (currentChatMessages.length > 0) {
                 conversationHistory.push(...currentChatMessages.slice(0, -1).map(msg => ({
                     ...msg,
@@ -1336,10 +1334,7 @@ class GeminiClone {
                 })));
             }
 
-            // בדיקת מספר ההודעות לפני הקיצור
             const originalLength = conversationHistory.length;
-
-            // הגבלת הודעות (רק אם מוגדר, בטווח 20, 50, 100, 200)
             if (this.settings.maxMessages && [20, 50, 100, 200].includes(this.settings.maxMessages)) {
                 conversationHistory = conversationHistory.slice(-this.settings.maxMessages);
                 if (conversationHistory.length < originalLength) {
@@ -1351,17 +1346,14 @@ class GeminiClone {
             const currentChat = this.chats[this.currentChatId];
             if (currentChat && currentChat.messages) {
                 currentChatMessages = [...currentChat.messages];
-                // הוספת הודעות הצ'אט הנוכחי, למעט ההודעה האחרונה
                 conversationHistory = currentChatMessages.slice(0, -1).map(msg => ({
                     ...msg,
                     chatId: this.currentChatId
                 }));
 
-                // בדיקת מספר ההודעות וטוקנים לפני הקיצור
                 const originalLength = conversationHistory.length;
                 const originalTokens = conversationHistory.reduce((sum, msg) => sum + estimateTokens(msg.content), 0);
 
-                // הגבלת טוקנים ל-חמש שישיות (רק אם מוגדר)
                 if (this.settings.maxTokens && !this.tokenLimitDisabled) {
                     let totalTokens = originalTokens;
                     const maxHistoryTokens = Math.floor(this.settings.maxTokens * 5 / 6);
@@ -1378,7 +1370,6 @@ class GeminiClone {
                     }
                 }
 
-                // הגבלת הודעות (רק אם מוגדר, בטווח 20, 50, 100, 200)
                 if (this.settings.maxMessages && [20, 50, 100, 200].includes(this.settings.maxMessages)) {
                     conversationHistory = conversationHistory.slice(-this.settings.maxMessages);
                     if (conversationHistory.length < originalLength) {
@@ -1389,7 +1380,6 @@ class GeminiClone {
             }
         }
 
-        // הצגת טוסט רק אם ההיסטוריה קוצרה
         if (wasHistoryTrimmed) {
             if (this.settings.maxMessages && [20, 50, 100, 200].includes(this.settings.maxMessages)) {
                 this.showToast("ההיסטוריה קוצרה ל-" + this.settings.maxMessages + " הודעות", "neutral");
@@ -1407,22 +1397,21 @@ class GeminiClone {
         console.log("Estimated tokens:", totalTokens);
 
         const messages = conversationHistory.map(msg => ({
-            role: msg.role === "assistant" ? "model" : "user", // הסרת "system", שימוש ב-"user"
+            role: msg.role === "assistant" ? "model" : "user",
             parts: [{ text: msg.content }]
         }));
 
-        // בניית הנחיות המערכת
-        let systemPromptText = this.HIDDEN_SYSTEM_PROMPT + this.CONSTANT_SYSTEM_PROMPT;
-        if (this.systemPrompt) {
-            systemPromptText += `\n${this.systemPrompt}`;
+        // Use the initial system prompt from the current chat
+        let systemPromptText = this.chats[this.currentChatId]?.systemPrompt || '';
+        if (this.pageConfig === 'chat-page') {
+            systemPromptText = this.CONSTANT_SYSTEM_PROMPT + (systemPromptText ? '\n' + systemPromptText : '');
         }
 
-        // הוספת הנחיות המערכת תמיד, עם תפקיד "user"
+        console.log("System Prompt Used:", systemPromptText);
+
         messages.unshift({
             role: "user",
-            parts: [{
-                text: "הנחיית מערכת: " + systemPromptText // הוספת קידומת להבהרה
-            }]
+            parts: [{ text: "הנחיית מערכת: " + systemPromptText }]
         });
 
         const fileParts = this.files.length > 0 ? await Promise.all(this.files.map(async file => ({
