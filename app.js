@@ -1180,7 +1180,22 @@ class GeminiClone {
         this.abortController = new AbortController();
         
         try {
-            // No longer building system prompt message here, it's handled in callGemini
+            let systemPrompt;
+            if (this.pageConfig === 'chat-page') {
+                systemPrompt = this.CONSTANT_SYSTEM_PROMPT + (this.systemPrompt ? '\n' + this.systemPrompt : '');
+            } else {
+                systemPrompt = this.systemPrompt; // עבור trump-page ו-nati-page, השתמש ב-this.systemPrompt בלבד
+            }
+
+            // הכנת ההודעות ל-API כולל systemPrompt
+            const messages = [
+                { role: 'system', content: systemPrompt },
+                ...(this.settings.includeChatHistory ? this.chats[this.currentChatId].messages.map(msg => ({
+                    role: msg.role,
+                    content: msg.content
+                })) : [{ role: 'user', content: message }])
+            ];
+
             const response = await this.callGemini(message, this.abortController.signal);
             const assistantMessage = {
                 id: this.generateMessageId(),
@@ -1276,7 +1291,7 @@ class GeminiClone {
         this.loadingInterval = interval;
     }
 
-    async callGemini(userMessageContent, signal) { // changed parameter name for clarity
+    async callGemini(message, signal) {
         const url = "https://generativelanguage.googleapis.com/v1beta/models/" + this.currentModel + ":generateContent?key=" + this.apiKey;
 
         // פונקציה משופרת לספירת טוקנים
@@ -1304,10 +1319,9 @@ class GeminiClone {
                             ...msg,
                             chatId: chat.id
                         })));
-                        // This "system" role is for internal chat history separation, not for Gemini API `system_instruction`
                         conversationHistory.push({
                             id: "separator_" + chat.id,
-                            role: "system", 
+                            role: "system",
                             content: "[END_CHAT: " + (chat.title || "צ'אט ללא כותרת") + "]",
                             timestamp: chat.messages[chat.messages.length - 1]?.timestamp || new Date().toISOString(),
                             chatId: chat.id
@@ -1360,7 +1374,6 @@ class GeminiClone {
                     }
 
                     if (wasHistoryTrimmed) {
-                        this.showToast("ההיסטוריה קוצרה בשל מגבלת הטוקנים", "neutral");
                         console.log(`History trimmed due to tokens. Remaining tokens: ${totalTokens}`);
                     }
                 }
@@ -1369,7 +1382,6 @@ class GeminiClone {
                 if (this.settings.maxMessages && [20, 50, 100, 200].includes(this.settings.maxMessages)) {
                     conversationHistory = conversationHistory.slice(-this.settings.maxMessages);
                     if (conversationHistory.length < originalLength) {
-                        this.showToast("ההיסטוריה קוצרה ל-" + this.settings.maxMessages + " הודעות", "neutral");
                         wasHistoryTrimmed = true;
                         console.log(`History trimmed due to maxMessages: ${this.settings.maxMessages}`);
                     }
@@ -1378,30 +1390,40 @@ class GeminiClone {
         }
 
         // הצגת טוסט רק אם ההיסטוריה קוצרה
-        // Note: Moved toast messages for trimming inside the if blocks for better specificity
-        // if (wasHistoryTrimmed) {
-        //     if (this.settings.maxMessages && [20, 50, 100, 200].includes(this.settings.maxMessages)) {
-        //         this.showToast("ההיסטוריה קוצרה ל-" + this.settings.maxMessages + " הודעות", "neutral");
-        //     }
-        //     if (this.settings.maxTokens && !this.tokenLimitDisabled) {
-        //         this.showToast("ההיסטוריה קוצרה בשל מגבלת הטוקנים", "neutral");
-        //     }
-        // }
+        if (wasHistoryTrimmed) {
+            if (this.settings.maxMessages && [20, 50, 100, 200].includes(this.settings.maxMessages)) {
+                this.showToast("ההיסטוריה קוצרה ל-" + this.settings.maxMessages + " הודעות", "neutral");
+            }
+            if (this.settings.maxTokens && !this.tokenLimitDisabled) {
+                this.showToast("ההיסטוריה קוצרה בשל מגבלת הטוקנים", "neutral");
+            }
+        }
 
-
-        console.log("Conversation History (before API mapping):", JSON.stringify(conversationHistory, null, 2));
-        console.log("Current Chat Messages (before API mapping):", JSON.stringify(currentChatMessages, null, 2));
+        console.log("Conversation History:", JSON.stringify(conversationHistory, null, 2));
+        console.log("Current Chat Messages:", JSON.stringify(currentChatMessages, null, 2));
         const totalLength = conversationHistory.reduce((sum, msg) => sum + msg.content.length, 0);
         const totalTokens = conversationHistory.reduce((sum, msg) => sum + estimateTokens(msg.content), 0);
         console.log("Total history length (characters):", totalLength);
         console.log("Estimated tokens:", totalTokens);
 
-        // Map conversation history to API expected format (user/model roles only)
-        // Ensure to filter out internal system messages (like END_CHAT markers) that are not part of the standard Gemini API conversation roles
-        const messagesForApi = conversationHistory.filter(msg => msg.role === 'user' || msg.role === 'assistant').map(msg => ({
-            role: msg.role === "assistant" ? "model" : "user",
+        const messages = conversationHistory.map(msg => ({
+            role: msg.role === "assistant" ? "model" : "user", // הסרת "system", שימוש ב-"user"
             parts: [{ text: msg.content }]
         }));
+
+        // בניית הנחיות המערכת
+        let systemPromptText = this.HIDDEN_SYSTEM_PROMPT + this.CONSTANT_SYSTEM_PROMPT;
+        if (this.systemPrompt) {
+            systemPromptText += `\n${this.systemPrompt}`;
+        }
+
+        // הוספת הנחיות המערכת תמיד, עם תפקיד "user"
+        messages.unshift({
+            role: "user",
+            parts: [{
+                text: "הנחיית מערכת: " + systemPromptText // הוספת קידומת להבהרה
+            }]
+        });
 
         const fileParts = this.files.length > 0 ? await Promise.all(this.files.map(async file => ({
             inlineData: {
@@ -1410,49 +1432,29 @@ class GeminiClone {
             }
         }))) : [];
 
-        // Add the current user message with attached files
-        messagesForApi.push({
+        messages.push({
             role: "user",
-            parts: [{ text: userMessageContent }, ...fileParts]
+            parts: [{ text: message }, ...fileParts]
         });
 
-        // Build the system instruction for the API
-        let finalSystemInstruction = "";
-        if (this.pageConfig === 'chat-page') {
-            finalSystemInstruction = this.CONSTANT_SYSTEM_PROMPT + (this.systemPrompt ? '\n' + this.systemPrompt : '');
-        } else {
-            finalSystemInstruction = this.systemPrompt; // For trump-page and nati-page, use this.systemPrompt only
-        }
-
-        const requestBody = {
-            contents: messagesForApi,
-            generationConfig: {
-                temperature: this.settings.temperature,
-                topK: this.settings.topK,
-                topP: this.settings.topP,
-                maxOutputTokens: this.tokenLimitDisabled ? undefined : this.settings.maxTokens
-            },
-            safetySettings: [
-                { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
-                { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_MEDIUM_AND_ABOVE" }
-            ]
-        };
-
-        // Add system_instruction only if it's not empty or just whitespace
-        if (finalSystemInstruction.trim()) {
-            requestBody.system_instruction = { parts: [{ text: finalSystemInstruction.trim() }] };
-            console.log("System Instruction included:", finalSystemInstruction.trim()); // בדיקת לוג להנחיית המערכת
-        } else {
-             console.log("No System Instruction provided.");
-        }
-
-
-        console.log("Full API Request Body:", JSON.stringify(requestBody, null, 2)); // לוג מפורט לבדיקה
+        console.log("Messages sent to API:", JSON.stringify(messages, null, 2));
 
         const response = await fetch(url, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(requestBody),
+            body: JSON.stringify({
+                contents: messages,
+                generationConfig: {
+                    temperature: this.settings.temperature,
+                    topK: this.settings.topK,
+                    topP: this.settings.topP,
+                    maxOutputTokens: this.tokenLimitDisabled ? undefined : this.settings.maxTokens
+                },
+                safetySettings: [
+                    { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
+                    { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_MEDIUM_AND_ABOVE" }
+                ]
+            }),
             signal
         });
 
@@ -1486,9 +1488,8 @@ class GeminiClone {
             return;
         }
     
-        // Filter out messages with role 'system' before rendering to the UI
-        const messagesToRender = this.chats[this.currentChatId].messages.filter(msg => msg.role !== 'system');
-        let messagesHTML = messagesToRender.map(message => this.createMessageHTML(message)).join('');
+        const messages = this.chats[this.currentChatId].messages;
+        let messagesHTML = messages.map(message => this.createMessageHTML(message)).join('');
     
         // הוספת מחוון שלוש הנקודות אם בטעינה וחלון הטעינה מוסתר
         if (this.isLoading && this.settings.hideLoadingOverlay) {
@@ -1508,17 +1509,6 @@ class GeminiClone {
         this.bindMessageActions();
         Prism.highlightAll();
 
-        // New: Call MathJax to typeset the newly added content
-        // Ensure MathJax is available globally
-        if (window.MathJax) {
-            window.MathJax.typesetPromise().then(() => {
-                console.log('MathJax typesetting complete.');
-            }).catch((err) => console.error('MathJax typesetting error:', err));
-        } else {
-            console.warn('MathJax is not loaded. Ensure the script is included in your HTML.');
-        }
-
-
         if (this.isLoading && this.settings.hideLoadingOverlay) {
             const stopBtn = this.chatMessages.querySelector('.animated-dots .stop-btn');
             if (stopBtn) {
@@ -1529,7 +1519,7 @@ class GeminiClone {
         // גלילה מיידית לתחתית הצ'אט
         setTimeout(() => {
             this.chatContainer.scrollTop = this.chatContainer.scrollHeight;
-        }, 100);
+        }, 0);
     }
 
     createMessageHTML(message) {
@@ -1547,14 +1537,11 @@ class GeminiClone {
         let filesHtml = '';
         if (isUser && message.files && message.files.length) {
             filesHtml = `<div class="file-preview-list" style="margin-top:8px;">` +
-                message.files.map((f, idx) => // Added idx here to ensure unique keys for file removal
+                message.files.map(f =>
                     `<div class="file-preview">
                         <span class="material-icons">${this.getFileIcon(f)}</span>
                         <span title="${f.name}">${f.name.length > 18 ? f.name.slice(0,15)+'...' : f.name}</span>
                         <span>(${this.formatFileSize(f.size)})</span>
-                        <button class="file-remove-btn" title="הסר" data-idx="${idx}">
-                            <span class="material-icons">close</span>
-                        </button>
                     </div>`
                 ).join('') + `</div>`;
         }
@@ -1607,21 +1594,16 @@ class GeminiClone {
         let formatted = content;
         
         // Code blocks - preserving actual line breaks
-        // Ensure MathJax doesn't process these, so replace $ with &#36; temporarily
         formatted = formatted.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, lang, code) => {
             lang = lang || 'javascript';
-            // Temporarily replace $ in code blocks to prevent MathJax processing them
-            const escapedCode = code.replace(/\$/g, '&#36;');
-            return `<pre class="code-block"><code class="language-${lang}">${escapedCode}</code>
+            // Don't convert to entities before Prism
+            return `<pre class="code-block"><code class="language-${lang}">${code}</code>
                 <button class="copy-code-btn" title="העתק קוד"><span class="material-icons">content_copy</span></button>
             </pre>`;
         });
         
-        // Inline code - same for inline code, temporarily replace $
-        formatted = formatted.replace(/`([^`]+)`/g, (match, code) => {
-            const escapedCode = code.replace(/\$/g, '&#36;');
-            return `<code>${escapedCode}</code>`;
-        });
+        // Inline code
+        formatted = formatted.replace(/`([^`]+)`/g, '<code>$1</code>');
         
         // Links
         formatted = formatted.replace(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
@@ -1952,9 +1934,7 @@ class GeminiClone {
 
     getChatSummary(chat) {
         if (!chat.messages || chat.messages.length === 0) return 'שיחה חדשה';
-        // Filter out system messages when generating summary
-        const nonSystemMessages = chat.messages.filter(m => m.role !== 'system');
-        const firstUserMsg = nonSystemMessages.find(m => m.role === 'user');
+        const firstUserMsg = chat.messages.find(m => m.role === 'user');
         if (firstUserMsg) {
             let summary = firstUserMsg.content.split('\n')[0];
             if (summary.length > 40) summary = summary.substring(0, 40) + '...';
@@ -2040,8 +2020,7 @@ class GeminiClone {
         }
         
         const chat = this.chats[this.currentChatId];
-        // Filter out system messages when sharing chat content
-        const chatText = chat.messages.filter(msg => msg.role !== 'system').map(msg =>
+        const chatText = chat.messages.map(msg =>
             `${msg.role === 'user' ? 'אתה' : 'Gemini'}: ${msg.content}`
         ).join('\n\n');
         
@@ -2098,11 +2077,8 @@ class GeminiClone {
             y += systemPromptLines.length * 7 + 10;
         }
         
-        // Filter out system messages for PDF export
-        const messagesToExport = chat.messages.filter(msg => msg.role !== 'system');
-
         // Add each message
-        for (const msg of messagesToExport) {
+        for (const msg of chat.messages) {
             const role = msg.role === 'user' ? 'אתה' : 'Gemini';
             
             doc.setFont("Helvetica", "bold");
@@ -2279,11 +2255,8 @@ class GeminiClone {
             </div>`;
         }
 
-        // Filter out system messages for Docx export
-        const messagesToExport = chat.messages.filter(msg => msg.role !== 'system');
-
         // הוספת כל ההודעות עם עיצוב Markdown מלא
-        for (const msg of messagesToExport) {
+        for (const msg of chat.messages) {
             const role = msg.role === 'user' ? 'אתה' : 'Gemini';
             const roleClass = msg.role === 'user' ? 'user' : 'assistant';
 
@@ -2323,10 +2296,7 @@ class GeminiClone {
             text += `System Prompt: ${chat.systemPrompt}\n\n`;
         }
         
-        // Filter out system messages for Text export
-        const messagesToExport = chat.messages.filter(msg => msg.role !== 'system');
-
-        for (const msg of messagesToExport) {
+        for (const msg of chat.messages) {
             const role = msg.role === 'user' ? 'אתה' : 'Gemini';
             
             text += `${role}`;
@@ -2551,8 +2521,8 @@ class GeminiClone {
                 <span title="${file.name}">${file.name.length > 18 ? file.name.slice(0,15)+'...' : file.name}</span>
                 <span>(${this.formatFileSize(file.size)})</span>
                 <button class="file-remove-btn" title="הסר" data-idx="${idx}">
-                            <span class="material-icons">close</span>
-                        </button>
+                    <span class="material-icons">close</span>
+                </button>
             `;
             
             el.querySelector('.file-remove-btn').onclick = (e) => {
@@ -2631,11 +2601,10 @@ class GeminiClone {
 
         this.callGemini(lastUserMessage, this.abortController.signal)
             .then(response => {
-                let cleanedResponse = response.replace(/\[END_CHAT:\s*.*?\]/g, '').trim();
                 const assistantMessage = {
                     id: this.generateMessageId(),
                     role: 'assistant',
-                    content: cleanedResponse,
+                    content: response,
                     timestamp: new Date().toISOString(),
                     model: this.currentModel,
                     vote: null
