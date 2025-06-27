@@ -33,6 +33,61 @@
 
 }
 
+.page-buttons-wrapper {
+    text-align: center;
+    margin: 30px 0;
+}
+
+.page-buttons-title {
+    font-weight: bold;
+    font-size: 16px;
+    margin-bottom: 12px;
+    color: #333;
+}
+
+.page-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+}
+
+.page-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background-color: white;
+    border: none;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s ease;
+}
+
+.page-btn:hover {
+    background-color: #f0f0f0;
+}
+
+.page-btn .material-icons {
+    display: inline-block;
+    padding: 20px;
+    margin-top: 15px; 
+    color: white; 
+    border-radius: 50%;
+    background: var(--gradient-primary);
+    box-shadow: var(--shadow-heavy);
+    animation: logoFloat 4s ease-in-out infinite;
+}
+
+
+.page-img {
+    width: 95%;
+    height: 95%;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
 #editChatTitleBtn {
     display: none;
 }

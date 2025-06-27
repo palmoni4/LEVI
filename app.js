@@ -84,6 +84,10 @@ class GeminiClone {
         this.saveSettings();
     }
 
+    loadNewPage(pageUrl) {
+        window.location.href = pageUrl;
+    }
+
     debounce(func, wait) {
         let timeout;
         return function (...args) {
@@ -196,6 +200,7 @@ class GeminiClone {
         this.includeAllChatHistoryCheckbox = document.getElementById('includeAllChatHistory');
         this.historySidebar = document.querySelector('.history-sidebar');
         this.historyToggle = document.querySelector('.history-toggle');
+        this.loadPageBtn = document.getElementById('loadPageBtn');
         
         // API & Model Settings
         this.geminiApiKey = document.getElementById('geminiApiKey');
@@ -361,6 +366,13 @@ class GeminiClone {
         if (this.includeAllChatHistoryCheckbox) {
             this.includeAllChatHistoryCheckbox.addEventListener('change', (e) => this.updateIncludeAllChatHistory(e.target.checked));
         }
+
+        document.querySelectorAll('.load-page-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const pageToLoad = btn.getAttribute('data-page');
+                this.loadNewPage(pageToLoad);
+            });
+        });
 
         // History search
         if (this.historySearch) {
