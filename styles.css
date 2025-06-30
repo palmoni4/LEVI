@@ -24,13 +24,167 @@
     --gradient-primary: linear-gradient(135deg, #4285f4, #34a853);
     --gradient-secondary: linear-gradient(135deg, #667eea, #764ba2);
     --glass-effect: rgba(255, 255, 255, 0.1);
+    --hover-bg: #f1f3f4;
 }
 
 #welcomeScreen {
     display: flex;
-
     justify-content: center;
+}
 
+.profile-image-menu {
+    position: fixed;
+    flex-direction: column;
+    top: 40px;
+    left: 50%;
+    transform: translate(-50%);
+    background: white;
+    border: 1px solid #ccc;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+    padding: 12px 16px;
+    border-radius: 12px;
+    z-index: 1000;
+    display: none;
+    gap: 20px;
+}
+
+.profile-image-menu .export-option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1 1 0;
+    min-width: 140px;
+    max-width: 220px;
+    text-align: center;
+    padding: 10px;
+    border-radius: 8px;
+    transition: background 0.2s ease;
+    cursor: pointer;
+}
+
+.profile-image-menu .export-option:hover {
+    background: #f5f5f5;
+}
+
+.user-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #ccc;
+}
+
+.profile-default-avatar {
+    font-family: 'Google Sans', 'Roboto', sans-serif;
+    line-height: 1.6;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 14px;
+    box-shadow: var(--shadow-medium);
+    background: var(--gradient-primary);
+    color: white;
+}
+
+.profile-avatar-image {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    object-fit: cover;
+    box-shadow: var(--shadow-medium);
+    background: var(--gradient-primary);
+    padding: 2px; /* חשוב לשמור מרווח בין התמונה למסגרת */
+    box-sizing: border-box;
+}
+
+.mini-icon-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 2px;
+    margin-top: 4px;
+}
+
+.mini-icon-btn .material-icons {
+    font-size: 18px;
+    color: #666;
+}
+
+.icon-only-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.icon-only-btn .material-icons {
+    font-size: 24px;
+    color: #555;
+}
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    background: rgba(0,0,0,0.4);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 999;
+}
+
+.modal-box {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    min-width: 300px;
+    text-align: center;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+}
+
+.profile-option {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin: 10px 0;
+    cursor: pointer;
+}
+
+.profile-option:hover {
+    background: #f5f5f5;
+    border-radius: 8px;
+}
+
+
+.profile-image-menu .material-icons {
+    width: 48px;
+    height: 48px;
+    font-size: 48px;
+    border-radius: 90%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #555;
+}
+
+.modal-close-btn {
+    margin-top: 10px;
+    padding: 6px 12px;
+    border: none;
+    background: #ddd;
+    border-radius: 6px;
+    cursor: pointer;
 }
 
 .page-buttons-wrapper {
@@ -45,15 +199,38 @@
     color: #333;
 }
 
+
+/* עדכון סגנון message-avatar עבור תמונת פרופיל */
+.message-avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.profile-image-upload {
+    position: relative; /* כדי שה-input יכסה את ה-div */
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.profile-image-upload:hover {
+    background-color: var(--hover-bg);
+}
+
 .page-buttons {
     display: flex;
+    flex-wrap: wrap; /* מוסיף שבירת שורות אוטומטית */
     justify-content: center;
     gap: 16px;
 }
 
 .page-btn {
-    width: 48px;
-    height: 48px;
+    width: 52px;
+    height: 52px;
     border-radius: 50%;
     background-color: white;
     border: none;
@@ -82,9 +259,9 @@
 
 
 .page-img {
-    width: 95%;
-    height: 95%;
-    object-fit: cover;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
     border-radius: 50%;
 }
 
@@ -1085,7 +1262,7 @@ body {
 
 .theme-toggle,
 .luxury-toggle,
-.export-btn {
+.action-btn {
     display: flex;
     align-items: center;
     gap: 12px;
@@ -1100,7 +1277,7 @@ body {
 
 .theme-toggle:hover,
 .luxury-toggle:hover,
-.export-btn:hover {
+.action-btn:hover {
     background: var(--hover-color);
     transform: scale(1.02);
 }
@@ -1160,6 +1337,7 @@ body {
     justify-content: center;
 }
 
+
 .action-btn:hover {
     background: var(--hover-color);
     color: var(--text-primary);
@@ -1195,9 +1373,14 @@ body {
     to { opacity: 1; transform: translateY(0); }
 }
 
+#customProfileOption span {
+    margin-top: 4px; 
+}
+
 .export-option {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 12px;
     padding: 10px 16px;
     color: var(--text-primary);
@@ -1205,8 +1388,61 @@ body {
     cursor: pointer;
 }
 
+.export-option span {
+    margin-bottom: 2px;
+}
+
+html[data-theme="dark"] .profile-image-menu {
+    background-color: #2d2d2d;
+    color: #f1f1f1;
+    border: 1px solid #444;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+}
+
+html[data-theme="dark"] .export-option:hover {
+    background-color: #3a3a3a;
+}
+
+html[data-luxury="true"] .profile-image-menu {
+    background: var(--gradient-secondary);
+    color: white;
+    border: none;
+    box-shadow: var(--shadow-intense);
+    backdrop-filter: blur(8px);
+}
+
+html[data-luxury="true"] .export-option {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    transition: background 0.3s ease;
+}
+
+html[data-luxury="true"] .export-option:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+html[data-theme="dark"] .welcome-title { color: #f1f1f1; }
+html[data-luxury="true"] .welcome-title {
+    background: linear-gradient(135deg, #ffffff, #b0c5ff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
 .export-option:hover {
     background: var(--hover-color);
+}
+
+.menu-title {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 8px;
+    text-align: center;
+}
+
+.profile-options-row {
+    display: flex;
+    flex-direction: row;
+    gap: 20px;
 }
 
 .export-option .material-icons {

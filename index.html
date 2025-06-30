@@ -151,11 +151,23 @@
                     <div class="page-buttons-wrapper">
                         <div class="page-buttons-title">עבור לדמות:</div>
                         <div class="page-buttons column">
-                            <button class="page-btn load-page-btn" data-page="trump.html" title="טראמפ">
-                                <img src="trump.jpg" alt="טראמפ" class="page-img">
+                            <button class="page-btn load-page-btn" data-page="Pharaoh" title="פרעה">
+                                <img src="Pharaoh/Pharaoh.jpg" alt="פרעה" class="page-img">
                             </button>
-                            <button class="page-btn load-page-btn" data-page="nati.html" title="נתי">
-                                <img src="nati.jpg" alt="נתי" class="page-img">
+                            <button class="page-btn load-page-btn" data-page="trump" title="טראמפ">
+                                <img src="trump/trump.jpg" alt="טראמפ" class="page-img">
+                            </button>
+                            <button class="page-btn load-page-btn" data-page="nati" title="נתי">
+                                <img src="nati/nati.jpg" alt="נתי" class="page-img">
+                            </button>
+                            <button class="page-btn load-page-btn" data-page="TheModernDream" title="החלום המודרני">
+                                <img src="TheModernDream/TheModernDream.jpg" alt="החלום המודרני" class="page-img">
+                            </button>
+                            <button class="page-btn load-page-btn" data-page="Anara" title="אנארה">
+                                <img src="Anara/Anara.jpg" alt="אנארה" class="page-img">
+                            </button>
+                            <button class="page-btn load-page-btn" data-page="TheWiseLibrarian" title="הספרן החכם">
+                                <img src="TheWiseLibrarian/TheWiseLibrarian.jpg" alt="הספרן החכם" class="page-img">
                             </button>
                         </div>
                     </div>
@@ -179,9 +191,10 @@
                 <span class="material-icons">stars</span>
                 <span>מצב יוקרתי</span>
             </div>
-            <div class="export-btn" id="exportBtn">
-                <span class="material-icons">download</span>
-                <span>ייצא צ'אט</span>
+            <button id="profileImageBtn" class="action-btn">
+                <span class="material-icons">person</span>
+                <span>הגדר תמונת פרופיל</span>
+            </button>
             </div>
         </div>
     </div>
@@ -191,13 +204,15 @@
             <div class="chat-title" id="chatTitle">צ'אט חדש</div>
             <div class="top-actions">
                 <button class="edit-chat-title-btn" id="editChatTitleBtn" title="ערוך שם צ'אט">✎</button>
+                <button class="action-btn" id="exportBtn" title="ייצא צ'אט">
+                    <span class="material-icons">download</span>
+                </button>
                 <button class="action-btn" id="shareBtn" title="העתק צ'אט">
                     <span class="material-icons">content_copy</span>
                 </button>
                 <button class="action-btn" id="regenerateBtn" title="צור תשובה מחדש">
                     <span class="material-icons">refresh</span>
                 </button>
-
             </div>
         </div>
         <div class="chat-container" id="chatContainer">
@@ -208,7 +223,7 @@
                             <span class="material-icons">auto_awesome</span>
                         </div>
                     </div>
-                    <h1>שלום, אני Gemini</h1>
+                   <h1 class="welcome-title">שלום, אני Gemini</h1>
                     <p>איך אני יכול לעזור לך היום?</p>
                     <div class="suggestion-cards">
                         <div class="suggestion-card" data-prompt="כתוב לי מאמר מקיף על השפעת הבינה המלאכותית על העתיד">
@@ -352,6 +367,24 @@
             <div class="modal-footer">
                 <button class="cancel-btn" id="cancelExport">ביטול</button>
                 <button class="confirm-btn" id="confirmExport">ייצא</button>
+            </div>
+        </div>
+    </div>
+    <div id="profileImageMenu" class="export-menu profile-image-menu">
+        <div class="menu-title">בחר תמונת פרופיל</div>
+        <div class="profile-options-row">
+            <div class="export-option" id="defaultProfileOption">
+                <span class="profile-default-avatar">אתה</span>
+                <span>ברירת מחדל</span>
+            </div>
+            <div class="export-option" id="customProfileOption">
+                <img id="customProfilePreview" class="profile-avatar-image" src="" alt="תמונה מותאמת">
+                <span>תמונה מותאמת אישית</span>
+            </div>
+            <div class="export-option" id="uploadProfileImageOption">
+                <span class="material-icons">upload</span>
+                <span>העלה תמונה חדשה</span>
+                <input type="file" id="profileImageInput" accept="image/*" style="display: none;">
             </div>
         </div>
     </div>
