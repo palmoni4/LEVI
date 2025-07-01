@@ -1,65 +1,43 @@
 class GeminiClone {
     constructor() {
-        let pathname = window.location.pathname;
-
-        // הסרת קידומת הכונן והתיקיות שמעל תיקיית הפרויקט
-        if (pathname.startsWith('/')) {
-            pathname = pathname.replace(/^\/+[A-Za-z]:\/|^\/+/, ''); // הסרת /C:/ או קידומת /
-        }
-
-        // מציאת תיקיית הפרויקט (למשל, --main) והתיקיות היחסיות בתוכו
-        const pathSegments = pathname.split('/').filter(segment => segment && segment !== 'index.html');
-        const possibleRoots = ['Gemini-Clone-main', '--main', 'LEVI-main']; // הוסף את כל שמות התיקיות האפשריות כאן
-        const projectRootIndex = pathSegments.findIndex(segment => possibleRoots.includes(segment));
-        const relativeSegments = projectRootIndex >= 0 ? pathSegments.slice(projectRootIndex + 1) : pathSegments;
-        let depth = relativeSegments.length; // עומק בתוך הפרויקט
-        const isGitHubPages = window.location.hostname.includes('github.io');
-        if (isGitHubPages && depth > 0) {
-            depth -= 1;
-        }
-        const imageBasePath = depth > 0 ? '../'.repeat(depth) : './';
-
-        console.log(`Raw pathname: ${window.location.pathname}, Cleaned pathname: ${pathname}, pathSegments: ${pathSegments}, relativeSegments: ${relativeSegments}, depth: ${depth}, imageBasePath: ${imageBasePath}`); // לוג לדיבוג
-
-        // מפת מילות מפתח ואייקונים עבור systemPrompt
         this.iconMap = {
             'בחור ישיבה מבוגר': {
-                iconPath: imageBasePath + 'nati/nati.jpg',
+                iconPath: '../nati/nati.jpg',
                 label: 'נתי',
                 likeMessage: 'סוף סוף אתה מדבר לעניין ויודע את מי להעריך...',
                 dislikeMessage: 'אתה לא מתבייש? לדסלייק אותי??? מי אתה בכלל???',
                 feedbackAsAlert: true
             },
             'טראמפ': {
-                iconPath: imageBasePath + 'trump/trump.jpg',
+                iconPath: '../trump/trump.jpg',
                 label: 'טראמפ',
                 likeMessage: 'תודה! אני תמיד צודק, כולם יודעים את זה.',
                 dislikeMessage: 'פייק ניוז! לגמרי פייק ניוז! הם פשוט מקנאים.',
                 feedbackAsAlert: false
             },
             'פרעה': {
-                iconPath: imageBasePath + 'Pharaoh/Pharaoh.jpg',
+                iconPath: '../Pharaoh/Pharaoh.jpg',
                 label: 'פרעה',
                 likeMessage: 'כמים הפנים לפנים – כן תגובתך נעמה לנפשי.',
                 dislikeMessage: 'אם זאת תגובתך, מוטב כי תשתוק ולא תוסיף חטא על פשע.',
                 feedbackAsAlert: false
             },
             'עורר חשיבה עמוקה באמצעות': {
-                iconPath: imageBasePath + 'TheModernDream/TheModernDream.jpg',
+                iconPath: '../TheModernDream/TheModernDream.jpg',
                 label: 'Gemini',
                 likeMessage: 'אתה באמת רואה את מה שמעבר? תודה על ההבנה העמוקה.',
                 dislikeMessage: 'האם יש משהו שחמק ממני? אולי נוכל לגלות זאת יחד, מעבר למילים.',
                 feedbackAsAlert: false
             },
             'קוסמיות ומיתיות כדי להפוך תשובות פשוטות לחוויה עמוקה': {
-                iconPath: imageBasePath + 'Anara/Anara.jpg',
+                iconPath: '../Anara/Anara.jpg',
                 label: 'אנארה',
                 likeMessage: 'תודה, חביבי! כוכב חדש זורח. רוצה סיפור נוסף?',
                 dislikeMessage: 'הרוח משתנה... ספר לי מה חסר, ואשזור חוכמה חדשה.',
                 feedbackAsAlert: false
             },
             'ספרן הידען הנצחי': {
-                iconPath: imageBasePath + 'TheWiseLibrarian/TheWiseLibrarian.jpg',
+                iconPath: '../TheWiseLibrarian/TheWiseLibrarian.jpg',
                 label: 'הספרן החכם',
                 likeMessage: 'תודה! אני שמח שהארתי את דרכך.',
                 dislikeMessage: 'שאיפתי היא לדייק. אשתדל להשתפר.',
