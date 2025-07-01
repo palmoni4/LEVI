@@ -68,6 +68,8 @@ class GeminiClone {
 
         };
 
+        this.forbiddenWords = ['בחור ישיבה מבוגר', 'טראמפ', 'פרעה', 'ספרן הידען הנצחי', 'עורר חשיבה עמוקה באמצעות', 'קוסמיות ומיתיות כדי להפוך תשובות פשוטות'];
+
         this.currentChatId = null;
         this.chats = JSON.parse(localStorage.getItem('gemini-chats') || '{}');
         this.apiKey = localStorage.getItem('gemini-api-key') || '';
@@ -146,6 +148,12 @@ class GeminiClone {
             localStorage.removeItem('gemini-system-prompt');
             }
             this.saveSettings();
+    }
+
+    isSystemPromptAllowed(systemPrompt) {
+        if (!systemPrompt) return false;
+        const promptLower = systemPrompt.toLowerCase();
+        return !this.forbiddenWords.some(word => promptLower.includes(word.toLowerCase()));
     }
 
     loadNewPage(pageUrl) {
@@ -2266,8 +2274,8 @@ class GeminiClone {
         doc.setFontSize(12);
         let y = 40;
 
-        // הוספת System Prompt רק אם המשתמש הגדיר אותה (בדף chat-page)
-        if (includeSystemPrompts && chat.systemPrompt && this.pageConfig === 'chat-page') {
+        // הוספת System Prompt אם נבחר
+        if (includeSystemPrompts && chat.systemPrompt && this.isSystemPromptAllowed(chat.systemPrompt)) {
             doc.setFont('Helvetica', 'italic');
             doc.text('System Prompt:', 190, y, { align: 'right' });
             y += 7;
@@ -2277,9 +2285,10 @@ class GeminiClone {
             doc.text(systemPromptLines, 190, y, { align: 'right' });
             y += systemPromptLines.length * 7 + 10;
         }
+
         // הוספת כל ההודעות
         for (const msg of chat.messages) {
-            const role = msg.role === 'user' ? 'אתה' : 'Gemini';
+            const role = msg.role === 'user' ? 'אתה' : this.getPromptIcon(chat.systemPrompt).label;
 
             doc.setFont('Helvetica', 'bold');
             doc.text(role, 190, y, { align: 'right' });
@@ -2327,7 +2336,7 @@ class GeminiClone {
 
         // שמירת הקובץ עם השם המעודכן: chat_Gemini_<שם_הצ'אט>
         const cleanTitle = this.cleanFileName(chat.title);
-        doc.save(`chat_Gemini_${cleanTitle}.pdf`);
+        doc.save(`chat_Gemini_${cleanTitle}`);
         this.showToast('הצ\'אט יוצא בהצלחה ל-PDF', 'success');
     }
 
@@ -2445,8 +2454,8 @@ class GeminiClone {
         <body>
             <div class="title">${chat.title}</div>`;
 
-        // הוספת System Prompt רק אם המשתמש הגדיר אותה (בדף chat-page)
-        if (includeSystemPrompts && chat.systemPrompt && this.pageConfig === 'chat-page') {
+        // הוספת System Prompt אם נבחר
+        if (includeSystemPrompts && chat.systemPrompt && this.isSystemPromptAllowed(chat.systemPrompt)) {
             html += `<div class="system-prompt">
                 <div>System Prompt:</div>
                 <div>${this.formatMessageContent(chat.systemPrompt)}</div>
@@ -2455,7 +2464,7 @@ class GeminiClone {
 
         // הוספת כל ההודעות עם עיצוב Markdown מלא
         for (const msg of chat.messages) {
-            const role = msg.role === 'user' ? 'אתה' : 'Gemini';
+            const role = msg.role === 'user' ? 'אתה' : this.getPromptIcon(chat.systemPrompt).label; // שימוש בשם העוזר
             const roleClass = msg.role === 'user' ? 'user' : 'assistant';
 
             html += `<div class="message">
@@ -2479,7 +2488,7 @@ class GeminiClone {
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
         const cleanTitle = this.cleanFileName(chat.title);
-        link.download = `chat_Gemini_${cleanTitle}.doc`;
+        link.download = `chat_Gemini_${cleanTitle}`;
         link.click();
 
         this.showToast('הצ\'אט יוצא בהצלחה ל-Word', 'success');
@@ -2488,13 +2497,12 @@ class GeminiClone {
     exportToText(chat, includeTimestamps, includeSystemPrompts) {
         let text = `${chat.title}\n\n`;
 
-        // הוספת System Prompt רק אם המשתמש הגדיר אותה (בדף chat-page)
-        if (includeSystemPrompts && chat.systemPrompt && this.pageConfig === 'chat-page') {
+        if (includeSystemPrompts && chat.systemPrompt && this.isSystemPromptAllowed(chat.systemPrompt)) {
             text += `System Prompt: ${chat.systemPrompt}\n\n`;
         }
 
         for (const msg of chat.messages) {
-            const role = msg.role === 'user' ? 'אתה' : 'Gemini';
+            const role = msg.role === 'user' ? 'אתה' : this.getPromptIcon(chat.systemPrompt).label; // שימוש בשם העוזר
 
             text += `${role}`;
 
@@ -2511,7 +2519,7 @@ class GeminiClone {
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
         const cleanTitle = this.cleanFileName(chat.title);
-        link.download = `chat_Gemini_${cleanTitle}.txt`;
+        link.download = `chat_Gemini_${cleanTitle}`;
         link.click();
 
         this.showToast('הצ\'אט יוצא בהצלחה לטקסט', 'success');
