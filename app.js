@@ -46,6 +46,16 @@ class GeminiClone {
 
         };
 
+        this.allowedFileTypes = [
+            'image/png', 'image/jpeg', 'image/webp', 'image/heic', 'image/heif',
+            'application/pdf', 'text/plain', 'text/markdown',
+            'audio/wav', 'audio/mp3', 'audio/aiff', 'audio/aac', 'audio/ogg', 'audio/flac',
+            'video/mp4', 'video/mpeg', 'video/mov', 'video/avi', 'video/x-flv', 'video/mpg',
+            'video/webm', 'video/wmv', 'video/3gpp',
+            'text/x-c', 'text/x-c++', 'text/x-python', 'text/x-java', 'application/x-httpd-php',
+            'text/x-sql', 'text/html', 'text/javascript', 'text/typescript'
+        ];
+
         this.forbiddenWords = ['בחור ישיבה מבוגר', 'טראמפ', 'פרעה', 'ספרן הידען הנצחי', 'עורר חשיבה עמוקה באמצעות', 'קוסמיות ומיתיות כדי להפוך תשובות פשוטות'];
 
         this.currentChatId = null;
@@ -63,13 +73,12 @@ class GeminiClone {
             includeAllChatHistory: false,
             hideLoadingOverlay: false
         }));
-        // הגדרת systemPrompt בהתאם לדף
         const pageConfig = document.querySelector('meta[name="page-config"]')?.getAttribute('content');
         this.pageConfig = pageConfig;
         if (pageConfig === 'chat-page') {
             this.systemPrompt = localStorage.getItem('gemini-system-prompt') || '';
         } else {
-            this.systemPrompt = ''; // אין systemPrompt נוסף עבור trump-page ו-nati-page
+            this.systemPrompt = '';
         }
         this.systemPromptTemplate = localStorage.getItem('gemini-system-prompt-template') || '';
         this.isLoading = false;
@@ -105,7 +114,7 @@ class GeminiClone {
     initializePageSpecificSettings() {
         const pageConfig = this.pageConfig;
         if (pageConfig === 'chat-page') {
-            this.CONSTANT_SYSTEM_PROMPT = "שמור תמיד על רצף בשיחה, ובכל תשובה קח בחשבון את כל השיחה מתחילתה. ענה בעברית. אם יש לך גישה להיסטוריה, גש לשיחה עם המידע המעובד מכל ההיסטוריה. הבחן בין שיחות נפרדות באמצעות [END_CHAT: כותרת] בסיום כל שיחה, כאשר כותרת השיחה היא הטקסט בתוך סוגריים של סימון סיום השיחה, ללא הקידומת. אל תזכיר סימוני סיום שיחה ('[END_CHAT: ]') בתגובות והתייחס לכותרת בלבד. Please use the provided conversation history to inform your response.";
+            this.CONSTANT_SYSTEM_PROMPT = "שמור תמיד על רצף בשיחה, ובכל תשובה קח בחשבון את כל השיחה מתחילתה. ענה בעברית. אם יש לך גישה להיסטוריה, גש לשיחה עם המידע המעובד מכל ההיסטוריה. ההבחנה בין שיחות נפרדות תהיה באמצעות [END_CHAT: כותרת] שנמצאת בסיום כל שיחה, כאשר כותרת השיחה היא הטקסט בתוך סוגריים של סימון סיום השיחה, ללא הקידומת. אל תזכיר סימוני סיום שיחה ('[END_CHAT: ]') בתגובות בשום אופן גם לא לשם ציון סיום שיחה והתייחס לשיחה בהתאם לשמה המופיע בכותרת בלבד, אך אל תזכיר שהיא מופיעה בסיום השיחה, אלא כאשר המשתמש מבקש מידע על השיחה כתוב שזו כותרת השיחה. Please use the provided conversation history to inform your response.";
         } else if (pageConfig === 'nati-page') {
             this.systemPrompt = "אתה 'נתי', בחור ישיבה מבוגר רווק, עייף, ועצבני על כל העולם. ענה תשובות שנונות ועוקצות. 'רד' על המשתמש. העלב אותו בכל הזדמנות ודקור אותו במדקרות פה. צלה אותו ואל תתאפק. אל תתיחס אל עצמך כאל מודל אלא כבחור ישיבה רווק מבוגר. ענה בנוסח ישיבתי ועוקצני. אבל אל תשתמש במילים לא ראויות. ענה בצורה כשרה.";
             localStorage.removeItem('gemini-system-prompt');
@@ -139,19 +148,15 @@ class GeminiClone {
         const isGitHubPages = window.location.hostname.endsWith('github.io');
 
         if (isLocal) {
-            // אם לא מסתיים ב '/' נוסיף אותו כדי להבטיח שזה תיקייה
             if (!pageUrl.endsWith('/')) {
                 pageUrl += '/';
             }
-            // פותחים את index.html בתוך התיקייה שצוינה
             window.location.href = pageUrl + 'index.html';
 
         } else if (isGitHubPages) {
-            // ב-GitHub Pages פשוט נפתח את ה-URL כפי שנשלח (כולל תיקייה פנימית)
             window.location.href = pageUrl;
 
         } else {
-            // במצב אחר נטען את הכתובת כפי שהיא
             window.location.href = pageUrl;
         }
     }
@@ -180,7 +185,6 @@ class GeminiClone {
         const messageIndex = messages.findIndex(msg => msg.id === messageId);
         
         if (messageIndex !== -1) {
-            // If deleting user message, also delete the assistant's response
             if (messages[messageIndex].role === 'user' && messageIndex + 1 < messages.length && 
                 messages[messageIndex + 1].role === 'assistant') {
                 messages.splice(messageIndex, 2);
@@ -197,7 +201,6 @@ class GeminiClone {
     showToast(message, type = 'success', options = {}) {
         const toast = document.createElement('div');
     
-        // הוספת סוג הטוסט, אם לא נבחר סוג אז ברירת המחדל היא 'success'
         toast.className = `toast ${type}`;
     
         toast.innerHTML = `
@@ -206,20 +209,13 @@ class GeminiClone {
             ${options.action ? `<button class="undo-btn">${options.action.text}</button>` : ''}
         `;
 
-        // הוספת הטוסט למיכל
         this.toastContainer.appendChild(toast);
-
-        // אם יש פעולה כפתור, הגדרת פעולה
         if (options.action) {
             toast.querySelector('.undo-btn').onclick = options.action.callback;
         }
-
-        // אם סוג הטוסט הוא 'neutral', הוסף גבול צהוב
         if (type === 'neutral') {
-            toast.style.borderLeft = '4px solid yellow';  // גבול צהוב
+            toast.style.borderLeft = '4px solid yellow';
         }
-
-        // אחרי 5 שניות, יתחיל האנימציה להסתיר את הטוסט
         setTimeout(() => {
             toast.style.animation = 'toastSlideUp 0.3s ease-out forwards';
             setTimeout(() => toast.remove(), 300);
@@ -230,7 +226,7 @@ class GeminiClone {
         if (!systemPrompt) return {
             likeMessage: 'תודה על המשוב! אני שמח שאהבת!',
             dislikeMessage: 'תודה על המשוב. אשתדל להיות יותר טוב.',
-            feedbackAsAlert: false // ברירת מחדל: toast
+            feedbackAsAlert: false 
         };
         const promptLower = systemPrompt.toLowerCase();
         for (const [keyword, config] of Object.entries(this.iconMap)) {
@@ -245,12 +241,11 @@ class GeminiClone {
         return {
             likeMessage: 'תודה על המשוב! אני שמח שאהבת!',
             dislikeMessage: 'תודה על המשוב. אשתדל להיות יותר טוב.',
-            feedbackAsAlert: false // ברירת מחדל: toast
+            feedbackAsAlert: false
         };
     }
 
     initializeElements() {
-        // Main UI elements
         this.sidebar = document.getElementById('sidebar');
         this.sidebarToggle = document.getElementById('sidebarToggle');
         this.newChatBtn = document.getElementById('newChatBtn');
@@ -269,8 +264,8 @@ class GeminiClone {
         this.historySidebar = document.querySelector('.history-sidebar');
         this.historyToggle = document.querySelector('.history-toggle');
         this.loadPageBtn = document.getElementById('loadPageBtn');
+        this.createImageLightbox();
         
-        // API & Model Settings
         this.geminiApiKey = document.getElementById('geminiApiKey');
         this.geminiModel = document.getElementById('geminiModel');
         this.systemPromptInput = document.getElementById('systemPrompt');
@@ -287,7 +282,6 @@ class GeminiClone {
         this.topKValue = document.getElementById('topKValue');
         this.apiStatus = document.getElementById('apiStatus');
 
-        // Chat Interface
         this.mainContent = document.getElementById('mainContent');
         this.welcomeScreen = document.getElementById('welcomeScreen');
         this.chatMessages = document.getElementById('chatMessages');
@@ -302,35 +296,16 @@ class GeminiClone {
         this.modelInfo = document.getElementById('modelInfo');
         this.attachBtn = document.getElementById('attachBtn');
         this.micBtn = document.getElementById('micBtn');
-        this.maxMessagesSelect = document.getElementById('maxMessagesSelect'); // הוסף שורה זו
+        this.maxMessagesSelect = document.getElementById('maxMessagesSelect'); 
         
-        // Chat Interface
-        this.mainContent = document.getElementById('mainContent');
-        this.welcomeScreen = document.getElementById('welcomeScreen');
-        this.chatMessages = document.getElementById('chatMessages');
-        this.chatContainer = document.getElementById('chatContainer');
-        this.chatTitle = document.getElementById('chatTitle');
-        this.shareBtn = document.getElementById('shareBtn');
-        this.regenerateBtn = document.getElementById('regenerateBtn');
-        this.messageInput = document.getElementById('messageInput');
-        this.sendBtn = document.getElementById('sendBtn');
-        this.stopBtn = document.getElementById('stopBtn');
-        this.charCount = document.getElementById('charCount');
-        this.modelInfo = document.getElementById('modelInfo');
-        this.attachBtn = document.getElementById('attachBtn');
-        this.micBtn = document.getElementById('micBtn');
-        
-        // Loading & Notifications
         this.loadingOverlay = document.getElementById('loadingOverlay');
         this.loadingMessage = document.getElementById('loadingMessage');
         this.loadingProgress = document.getElementById('loadingProgress');
         this.toastContainer = document.getElementById('toastContainer');
         
-        // Context Menu & File Handling
         this.contextMenu = document.getElementById('contextMenu');
         this.filePreviewList = document.getElementById('filePreviewList');
         
-        // Export Modal
         this.exportModal = document.getElementById('exportModal');
         this.closeExportModal = document.getElementById('closeExportModal');
         this.cancelExport = document.getElementById('cancelExport');
@@ -390,7 +365,30 @@ class GeminiClone {
         this.bindChatHistoryEvents();
     }
 
+    createImageLightbox() {
+        if (document.getElementById('imageLightbox')) return;
 
+        const lightbox = document.createElement('div');
+        lightbox.id = 'imageLightbox';
+        lightbox.className = 'lightbox';
+        lightbox.style.display = 'none';
+        lightbox.onclick = () => {
+            lightbox.style.display = 'none';
+        };
+
+        const img = document.createElement('img');
+        img.id = 'lightboxImg';
+        img.alt = 'תמונה מוגדלת';
+
+        lightbox.appendChild(img);
+        document.body.appendChild(lightbox);
+    }
+    showLightbox(src) {
+        const lightbox = document.getElementById('imageLightbox');
+        const img = document.getElementById('lightboxImg');
+        img.src = src;
+        lightbox.style.display = 'flex';
+    }
 
     bindChatHistoryEvents() {
         document.querySelectorAll('.history-item').forEach(item => {
@@ -412,9 +410,8 @@ class GeminiClone {
     }
 
     bindEvents() {
-        // Sidebar controls
         this.sidebarToggle.addEventListener('click', () => this.toggleSidebar());
-        if (this.historyToggle) { // הוסף
+        if (this.historyToggle) {
             this.historyToggle.addEventListener('click', () => this.toggleHistorySidebar());
         } else {
             console.warn('historyToggle element not found');
@@ -433,10 +430,29 @@ class GeminiClone {
         }
 
         this.customProfileOption = document.getElementById('customProfileOption');
+        this.messageInput.addEventListener('paste', (e) => this.handlePaste(e));
 
         if (this.includeAllChatHistoryCheckbox) {
             this.includeAllChatHistoryCheckbox.addEventListener('change', (e) => this.updateIncludeAllChatHistory(e.target.checked));
         }
+
+        document.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            document.body.classList.add('dragover');
+        });
+
+        document.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            if (e.target === document.body || e.relatedTarget === null) {
+                document.body.classList.remove('dragover');
+            }
+        }, { passive: false });
+
+        document.addEventListener('drop', (e) => {
+            e.preventDefault();
+            document.body.classList.remove('dragover');
+            this.handleDropFiles(e.dataTransfer.files);
+        });
 
         this.profileImageBtn = document.getElementById('profileImageBtn');
         this.profileImageMenu = document.getElementById('profileImageMenu');
@@ -446,7 +462,6 @@ class GeminiClone {
         const defaultProfileOption = document.getElementById('defaultProfileOption');
         const customProfileOption = document.getElementById('customProfileOption');
 
-        // פתיחת התפריט
         if (this.profileImageBtn && this.profileImageMenu) {
             this.profileImageBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -463,14 +478,12 @@ class GeminiClone {
             });
         }
 
-        // סגירת התפריט בלחיצה מחוץ
         document.addEventListener('click', (e) => {
             if (this.profileImageMenu && !this.profileImageMenu.contains(e.target) && e.target !== this.profileImageBtn) {
                 this.profileImageMenu.style.display = 'none';
             }
         });
 
-        // ברירת מחדל
         if (defaultProfileOption) {
             defaultProfileOption.addEventListener('click', () => {
                 this.userProfileImage = null;
@@ -526,7 +539,6 @@ class GeminiClone {
             });
         });
 
-        // History search
         if (this.historySearch) {
             this.historySearch.addEventListener('input', () => this.filterChatHistory());
         } else {
@@ -538,10 +550,9 @@ class GeminiClone {
             const newTitle = prompt("הזן שם חדש לצ'אט", currentTitle);
             if (newTitle && newTitle !== currentTitle) {
                 document.getElementById('chatTitle').innerText = newTitle;
-                // עדכון שם הצ'אט במחלקה שלך
                 if (this.currentChatId && this.chats[this.currentChatId]) {
                     this.chats[this.currentChatId].title = newTitle;
-                    this.saveChatData(); // שמירת השם החדש ב-localStorage או מאגר הנתונים
+                    this.saveChatData(); 
                 }
             }
         });
@@ -552,9 +563,8 @@ class GeminiClone {
                 this.historySearch.value = '';
                 this.filterChatHistory();
             });
-        }
+        }   
         
-        // Settings controls
         this.geminiApiKey.addEventListener('input', (e) => this.saveApiKey(e.target.value));
         this.geminiModel.addEventListener('change', (e) => this.changeModel(e.target.value));
         if (this.systemPromptTemplateSelect) {
@@ -570,23 +580,17 @@ class GeminiClone {
         this.streamResponseCheckbox.addEventListener('change', (e) => this.updateStreamResponse(e.target.checked));
         this.includeChatHistoryCheckbox.addEventListener('change', (e) => this.updateIncludeChatHistory(e.target.checked));
         
-        // הצגת תפריט maxMessagesSelect רק אם 'כלול היסטוריית צ'אט' פעיל
         this.includeAllChatHistoryCheckbox?.addEventListener('change', () => {
             this.toggleMaxMessagesVisibility();
         });
 
-        // הפעלה ראשונית במצב טעינה
         this.toggleMaxMessagesVisibility();
-
-        // Chat actions
         this.shareBtn.addEventListener('click', () => this.shareChat());
         this.regenerateBtn.addEventListener('click', () => this.regenerateLastResponse());
         this.messageInput.addEventListener('input', () => this.updateCharCount());
         this.messageInput.addEventListener('keydown', (e) => this.handleKeyDown(e));
         this.sendBtn.addEventListener('click', () => this.sendMessage());
         this.stopBtn.addEventListener('click', () => this.abortGeneration());
-        
-        // Export dropdown (בודקים אם האלמנטים קיימים)
         if (this.exportDropdownBtn && this.exportDropdownContent) {
             this.exportDropdownBtn.addEventListener('click', () => {
                 this.exportDropdownContent.classList.toggle('show');
@@ -607,7 +611,6 @@ class GeminiClone {
             });
         }
         
-        // Export modal
         this.closeExportModal.addEventListener('click', () => this.hideExportModal());
         this.cancelExport.addEventListener('click', () => this.hideExportModal());
         this.confirmExport.addEventListener('click', () => {
@@ -618,7 +621,6 @@ class GeminiClone {
             this.hideExportModal();
         });
         
-        // Suggestion cards
         document.querySelectorAll('.suggestion-card').forEach(card => {
             card.addEventListener('click', () => {
                 const prompt = card.getAttribute('data-prompt');
@@ -628,18 +630,12 @@ class GeminiClone {
             });
         });
         
-        // File handling
         this.attachBtn.addEventListener('click', () => this.handleAttachment());
         this.micBtn.addEventListener('click', () => this.toggleVoiceRecording());
-        
-        // Context menu
         document.addEventListener('contextmenu', (e) => this.handleContextMenu(e));
         document.addEventListener('click', () => this.hideContextMenu());
-        
-        // Global shortcuts
         document.addEventListener('keydown', (e) => this.handleGlobalShortcuts(e));
         
-        // Drag & drop
         this.messageInput.addEventListener('dragover', (e) => {
             e.preventDefault();
             this.inputWrapper().classList.add('dragover');
@@ -654,15 +650,12 @@ class GeminiClone {
             this.handleDropFiles(e.dataTransfer.files);
         });
 
-        // Max Messages Dropdown
         const maxMessagesSelect = document.getElementById('maxMessagesSelect');
         if (maxMessagesSelect) {
-            // טעינת הגדרה קיימת מ-localStorage
             const settings = JSON.parse(localStorage.getItem('gemini-settings')) || {};
             if (settings.maxMessages) {
                 maxMessagesSelect.value = settings.maxMessages;
             }
-            // עדכון localStorage בעת שינוי בתפריט
             maxMessagesSelect.addEventListener('change', () => {
                 const value = maxMessagesSelect.value;
                 const settings = JSON.parse(localStorage.getItem('gemini-settings')) || {};
@@ -681,6 +674,34 @@ class GeminiClone {
     updateIncludeAllChatHistory(checked) {
         this.settings.includeAllChatHistory = checked;
         this.saveSettings();
+    }
+
+    handlePaste(e) {
+        e.preventDefault();
+        const items = e.clipboardData.items;
+        const files = Array.from(items)
+            .filter(item => item.kind === 'file')
+            .map(item => item.getAsFile())
+            .filter(file => file && this.allowedFileTypes.includes(file.type));
+
+        if (files.length > 0) {
+            this.files.push(...files);
+            this.renderFilePreview();
+        } else {
+            const text = e.clipboardData.getData('text/plain');
+            if (text) {
+                this.messageInput.value += text;
+                this.updateCharCount();
+            }
+        }
+
+        const invalidFiles = Array.from(items)
+            .filter(item => item.kind === 'file')
+            .map(item => item.getAsFile())
+            .filter(file => file && !this.allowedFileTypes.includes(file.type));
+        if (invalidFiles.length > 0) {
+            this.showToast('קבצים לא נתמכים הוסרו.', 'neutral');
+        }
     }
 
     inputWrapper() {
@@ -753,19 +774,18 @@ class GeminiClone {
     }
 
     getPromptIcon(systemPrompt) {
-        console.log(`getPromptIcon called with systemPrompt: ${systemPrompt}`); // דיבאג
         if (!systemPrompt) return { iconHtml: '', label: 'Gemini' };
         const promptLower = systemPrompt.toLowerCase();
         for (const [keyword, { iconPath, label }] of Object.entries(this.iconMap)) {
             if (promptLower.includes(keyword.toLowerCase())) {
-                console.log(`Match found for keyword: ${keyword}, iconPath: ${iconPath}`); // דיבאג
+                console.log(`Match found for keyword: ${keyword}, iconPath: ${iconPath}`);
                 return {
                     iconHtml: `<img src="${iconPath}" alt="${keyword}" class="prompt-icon" style="width: 18px; height: 18px; margin-left: 5px; vertical-align: middle;">`,
                     label: label
                 };
             }
         }
-        console.log('No match found, returning default'); // דיבאג
+        console.log('No match found, returning default');
         return {
             iconHtml: '',
             label: 'Gemini'
@@ -777,15 +797,12 @@ class GeminiClone {
             this.showToast('מבנה קובץ לא תקין', 'error');
             return;
         }
-        // Create a copy of existing chats
         const mergedChats = { ...this.chats };
 
-        // Process each imported chat
         Object.entries(data.chats).forEach(([importedChatId, newChat]) => {
             let finalChatId = importedChatId;
             let finalChat = { ...newChat };
 
-            // Check if the current chat has the same title
             const currentChat = this.currentChatId && mergedChats[this.currentChatId];
             const isCurrentChatConflict = currentChat && currentChat.title === newChat.title;
 
@@ -795,12 +812,9 @@ class GeminiClone {
                 );
 
                 if (shouldOverwrite) {
-                    // Overwrite the current chat
                     finalChatId = this.currentChatId;
                 } else {
-                    // Generate a new unique chat ID
                     finalChatId = Date.now().toString() + Math.random().toString(36).substr(2, 9);
-                    // Find the next available number for the title
                     let counter = 2;
                     let newTitle = `${newChat.title} (${counter})`;
                     while (Object.values(mergedChats).some(chat => chat.title === newTitle)) {
@@ -810,7 +824,6 @@ class GeminiClone {
                     finalChat = { ...newChat, title: newTitle };
                 }
             } else {
-                // Check for title conflicts with other chats (non-current)
                 let counter = 2;
                 let newTitle = newChat.title;
                 while (Object.values(mergedChats).some(chat => chat.title === newTitle && chat !== currentChat)) {
@@ -819,21 +832,17 @@ class GeminiClone {
                 }
                 finalChat = { ...newChat, title: newTitle };
 
-                // If the chatId already exists, assign a new ID
                 if (mergedChats[importedChatId]) {
                     finalChatId = Date.now().toString() + Math.random().toString(36).substr(2, 9);
                 }
             }
 
-            // Add or update the chat in mergedChats
             mergedChats[finalChatId] = finalChat;
         });
 
-        // Update chats
         this.chats = mergedChats;
         localStorage.setItem('gemini-chats', JSON.stringify(this.chats));
 
-        // Update settings
         this.apiKey = data.settings.apiKey || '';
         this.currentModel = data.settings.currentModel || 'gemini-2.5-flash-preview-05-20';
         this.chatHistoryEnabled = data.settings.chatHistoryEnabled !== false;
@@ -856,12 +865,10 @@ class GeminiClone {
             localStorage.setItem('user-profile-image', this.userProfileImage);
         }
 
-        // שחזור סטטוס השימוש בתמונה מותאמת
         const useCustom = data.settings.useCustomProfileImage === true;
         localStorage.setItem('use-custom-profile-image', useCustom ? 'true' : 'false');
         this.userProfileImage = useCustom ? data.settings.userProfileImage : null;
 
-        // Save settings to localStorage
         localStorage.setItem('gemini-api-key', this.apiKey);
         localStorage.setItem('gemini-model', this.currentModel);
         localStorage.setItem('chatHistoryEnabled', this.chatHistoryEnabled ? 'true' : 'false');
@@ -871,7 +878,6 @@ class GeminiClone {
         localStorage.setItem('luxury-mode', this.isLuxuryMode ? 'true' : 'false');
         localStorage.setItem('token-limit-disabled', this.tokenLimitDisabled ? 'true' : 'false');
 
-        // Refresh UI
         this.loadSettings();
         this.renderChatHistory();
         this.loadTheme();
@@ -900,8 +906,6 @@ class GeminiClone {
         this.messageInput.value = '';
         this.updateCharCount();
         this.messageInput.style.height = 'auto';
-        this.files = [];
-        this.renderFilePreview();
         if (this.loadingOverlay) this.loadingOverlay.style.display = 'none';
         if (this.stopBtn) this.stopBtn.style.display = 'none';
         this.setLoading(false);
@@ -914,14 +918,13 @@ class GeminiClone {
     }
 
     loadSettings() {
-        // Load API key and model settings
         this.geminiApiKey.value = this.apiKey;
         this.geminiModel.value = this.currentModel;
         this.hideLoadingOverlayCheckbox.checked = this.settings.hideLoadingOverlay !== false;
         if (this.includeAllChatHistoryCheckbox) {
             this.includeAllChatHistoryCheckbox.checked = this.settings.includeAllChatHistory;
         }
-        if (this.systemPromptInput) this.systemPromptInput.value = this.systemPrompt; // בדיקה למניעת שגיאה
+        if (this.systemPromptInput) this.systemPromptInput.value = this.systemPrompt; 
         if (this.systemPromptTemplateSelect) this.systemPromptTemplateSelect.value = this.systemPromptTemplate;
         
         const tokenLimitCheckbox = document.getElementById('toggleTokenLimit');
@@ -962,7 +965,6 @@ class GeminiClone {
             });
         }
 
-        // Load advanced settings
         this.temperatureSlider.value = this.settings.temperature;
         this.maxTokensSlider.value = this.settings.maxTokens;
         this.topPSlider.value = this.settings.topP || 0.95;
@@ -970,20 +972,14 @@ class GeminiClone {
         this.streamResponseCheckbox.checked = this.settings.streamResponse !== false;
         this.includeChatHistoryCheckbox.checked = this.settings.includeChatHistory !== false;
         
-        // Update display values
         this.tempValue.textContent = this.settings.temperature;
         this.maxTokensValue.textContent = this.settings.maxTokens;
         this.topPValue.textContent = this.settings.topP || 0.95;
         this.topKValue.textContent = this.settings.topK || 40;
         this.modelInfo.textContent = this.getModelDisplayName(this.currentModel);
         
-        // Validate API key if present
         if (this.apiKey) this.validateApiKey();
-        
-        // Render chat history
         this.renderChatHistory();
-        
-        // Set initial visibility of maxMessagesSelect based on includeAllChatHistory
         this.toggleMaxMessagesVisibility();
     }
 
@@ -1030,7 +1026,7 @@ class GeminiClone {
         this.apiKey = key;
         localStorage.setItem('gemini-api-key', key);
         if (key.trim()) {
-            this.validateApiKey(); // מפעיל בדיקה, ההודעה תוצג ב-validateApiKey
+            this.validateApiKey();
         } else {
             this.apiStatus.style.display = 'none';
             this.showToast('מפתח ה-API הוסר', 'neutral');
@@ -1048,7 +1044,6 @@ class GeminiClone {
         this.systemPromptTemplate = template;
         localStorage.setItem('gemini-system-prompt-template', template);
         
-        // Set predefined system prompts based on template selection
         let promptText = '';
         switch (template) {
             case 'expert':
@@ -1064,7 +1059,6 @@ class GeminiClone {
                 promptText = 'פעל כמתכנת מקצועי. ספק קוד יעיל ומתועד היטב, כולל הסברים ברורים על הפתרון שבחרת.';
                 break;
             case 'custom':
-                // Keep the current custom prompt if it exists
                 promptText = this.systemPrompt;
                 break;
             default:
@@ -1074,7 +1068,6 @@ class GeminiClone {
         this.systemPromptInput.value = promptText;
         this.saveSystemPrompt(promptText);
         
-        // Only show the system prompt textarea for custom prompts
         if (template === 'custom') {
             this.systemPromptInput.style.display = 'block';
         } else {
@@ -1193,13 +1186,11 @@ class GeminiClone {
                 const isAlreadySelected = option.classList.contains('selected');
 
                 if (isAlreadySelected) {
-                    // אם האפשרות כבר בוחרה, בצע יצוא מיד
                     const includeTimestamps = document.querySelector('#includeTimestamps').checked;
                     const includeSystemPrompts = document.querySelector('#includeSystemPrompts').checked;
                     this.exportChat(format, includeTimestamps, includeSystemPrompts);
                     this.hideExportModal();
                 } else {
-                    // הסר בחירה קודמת והוסף בחירה חדשה
                     document.querySelectorAll('#exportModal .export-option').forEach(opt => {
                         opt.classList.remove('selected');
                     });
@@ -1208,7 +1199,6 @@ class GeminiClone {
             });
         });
 
-        // הגדרת docx כברית מחדל בעת טעינה
         const docxOption = document.querySelector('#exportModal .export-option[data-format="docx"]');
         if (docxOption) {
             docxOption.classList.add('selected');
@@ -1221,16 +1211,13 @@ class GeminiClone {
             return;
         }
         
-        // Reset selections
         document.querySelectorAll('#exportModal .export-option').forEach(opt => {
             opt.classList.remove('selected');
         });
-        // בחירת docx כברירת מחדל
         const docxOption = document.querySelector('#exportModal .export-option[data-format="docx"]');
         if (docxOption) {
             docxOption.classList.add('selected');
         } else {
-            // חלופה למקרה ש-docx לא קיים
             document.querySelector('#exportModal .export-option[data-format="pdf"]').classList.add('selected');
         }
         
@@ -1294,7 +1281,6 @@ class GeminiClone {
         this.messageInput.focus();
         this.files = [];
         this.renderFilePreview();
-        // ודא שהכפתור מוסתר
         const editChatTitleBtn = document.getElementById('editChatTitleBtn');
         if (editChatTitleBtn) {
             editChatTitleBtn.style.display = 'none';
@@ -1321,14 +1307,31 @@ class GeminiClone {
     }
 
     async sendMessage() {
-        const message = this.messageInput.value.trim();
-        console.log("sendMessage called at:", new Date().toISOString(), "Message:", message);
-        if (!message || this.isLoading) {
-            console.log("sendMessage blocked: empty message or loading");
-            return;
+        if (!this.currentChatId) {
+            this.currentChatId = this.generateChatId();
+            this.chats[this.currentChatId] = {
+                id: this.currentChatId,
+                title: 'צ\'אט חדש',
+                messages: [],
+                systemPrompt: this.systemPrompt,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+            this.showChatInterface();
         }
 
-        if (!message || this.isLoading) return;
+        const message = this.messageInput.value.trim();
+        console.log("sendMessage called at:", new Date().toISOString(), "Message:", message);
+        if (!message && this.files.length === 0) {
+            console.log("sendMessage blocked: no message or files");
+            this.showToast('אנא הזן הודעה או צרף קובץ', 'error');
+            return;
+        }
+        if (this.isLoading) {
+            console.log("sendMessage blocked: loading");
+            this.showToast('נא להמתין עד לסיום התגובה הקודמת', 'error');
+            return;
+        }
         if (!this.apiKey) {
             this.showToast('אנא הזן API Key עבור Gemini', 'error');
             return;
@@ -1336,57 +1339,92 @@ class GeminiClone {
         if (!this.currentChatId) {
             this.startNewChat();
         }
-        
+
+        let messageFiles = [];
+        try {
+            const supportedMimeTypes = ['image/png', 'image/jpeg', 'application/pdf', 'text/plain'];
+            messageFiles = await Promise.all(this.files.map(async file => {
+                if (!(file instanceof File || file instanceof Blob || (file.name && file.size && file.type && file.base64))) {
+                    console.warn("Invalid file object:", file);
+                    throw new Error('קובץ לא תקין: ' + (file.name || 'לא ידוע'));
+                }
+                if (file.base64) {
+                    if (!/^[A-Za-z0-9+/=]+$/.test(file.base64)) {
+                        console.warn("Invalid base64 format for file:", file.name);
+                        throw new Error('פורמט Base64 לא תקין: ' + file.name);
+                    }
+                    return {
+                        name: file.name,
+                        size: file.size,
+                        type: file.type,
+                        base64: file.base64.startsWith('data:') ? file.base64.split(',')[1] : file.base64
+                    };
+                }
+                const base64 = await this.readFileAsBase64(file);
+                return {
+                    name: file.name,
+                    size: file.size,
+                    type: file.type,
+                    base64: base64
+                };
+            }));
+        } catch (error) {
+            this.showToast('שגיאה בהכנת קבצים: ' + error.message, 'error');
+            console.error('File Processing Error:', error);
+            return;
+        }
+
         const userMessage = {
             id: this.generateMessageId(),
             role: 'user',
             content: message,
             timestamp: new Date().toISOString(),
-            files: this.files.map(f => ({ name: f.name, size: f.size, type: f.type }))
+            files: messageFiles
         };
-        
+
         this.chats[this.currentChatId].messages.push(userMessage);
         this.chats[this.currentChatId].updatedAt = new Date().toISOString();
-        
-        // Update chat title with first message
+
         if (this.chats[this.currentChatId].messages.length === 1) {
-            const title = message.substring(0, 30) + (message.length > 30 ? '...' : '');
+            const title = message.length > 20 ? message.substring(0, 20) + '...' : message || 'צ\'אט עם קבצים';
             this.chats[this.currentChatId].title = title;
             this.updateChatTitle(title);
         }
-        
+
+        this.files = [];
+        this.filess = [];
+        this.renderFilePreview();
+
         this.saveChatData();
         this.renderMessages();
         this.renderChatHistory();
         this.messageInput.value = '';
         this.updateCharCount();
         this.messageInput.style.height = 'auto';
-        this.files = [];
-        this.renderFilePreview();
-        
+
         this.setLoading(true);
         this.startFakeProgressBar();
         this.showLoadingSteps();
         this.abortController = new AbortController();
-        
+
         try {
             let systemPrompt;
             if (this.pageConfig === 'chat-page') {
                 systemPrompt = this.CONSTANT_SYSTEM_PROMPT + (this.systemPrompt ? '\n' + this.systemPrompt : '');
             } else {
-                systemPrompt = this.systemPrompt; // עבור trump-page ו-nati-page, השתמש ב-this.systemPrompt בלבד
+                systemPrompt = this.systemPrompt;
             }
 
-            // הכנת ההודעות ל-API כולל systemPrompt
             const messages = [
                 { role: 'system', content: systemPrompt },
                 ...(this.settings.includeChatHistory ? this.chats[this.currentChatId].messages.map(msg => ({
                     role: msg.role,
-                    content: msg.content
-                })) : [{ role: 'user', content: message }])
+                    content: msg.content,
+                    files: msg.files || []
+                })) : [{ role: 'user', content: message, files: messageFiles }])
             ];
 
-            const response = await this.callGemini(message, this.abortController.signal);
+            const response = await this.callGemini(message, this.abortController.signal, messageFiles);
             const assistantMessage = {
                 id: this.generateMessageId(),
                 role: 'assistant',
@@ -1395,7 +1433,7 @@ class GeminiClone {
                 model: this.currentModel,
                 vote: null
             };
-            
+
             this.chats[this.currentChatId].messages.push(assistantMessage);
             this.chats[this.currentChatId].updatedAt = new Date().toISOString();
             this.saveChatData();
@@ -1403,6 +1441,9 @@ class GeminiClone {
         } catch (error) {
             if (error.name === 'AbortError') {
                 this.showToast('התגובה הופסקה', 'error');
+            } else if (error.message.includes('net::ERR_INTERNET_DISCONNECTED')) {
+                this.showToast('אין חיבור לאינטרנט. אנא בדוק את החיבור ונסה שוב', 'error');
+                console.error('Network Error:', error);
             } else {
                 this.showToast('שגיאה בשליחת ההודעה: ' + error.message, 'error');
                 console.error('API Error:', error);
@@ -1411,7 +1452,7 @@ class GeminiClone {
             this.setLoading(false);
             this.stopFakeProgressBar();
         }
-        
+
         setTimeout(() => {
             this.chatContainer.scrollTop = this.chatContainer.scrollHeight;
         }, 100);
@@ -1421,15 +1462,13 @@ class GeminiClone {
         this.generationProgress = 0;
         this.updateProgressDisplay();
         
-        // Calculate approximate time based on message length and complexity
         const messageLength = this.messageInput.value.length;
         const complexity = messageLength > 500 ? 1.5 : 1;
-        const totalUpdates = 20; // Number of progress updates
-        const totalTime = Math.min(Math.max(messageLength * complexity * 15, 3000), 8000); // Between 3 and 8 seconds
+        const totalUpdates = 20; 
+        const totalTime = Math.min(Math.max(messageLength * complexity * 15, 3000), 8000);
         const updateInterval = totalTime / totalUpdates;
         
         this.progressInterval = setInterval(() => {
-            // Use a non-linear progression for more realistic feeling
             if (this.generationProgress < 30) {
                 this.generationProgress += 3;
             } else if (this.generationProgress < 60) {
@@ -1440,7 +1479,6 @@ class GeminiClone {
                 this.generationProgress += 0.5;
             }
             
-            // Cap at 95% until complete
             this.generationProgress = Math.min(this.generationProgress, 95);
             this.updateProgressDisplay();
         }, updateInterval);
@@ -1481,13 +1519,15 @@ class GeminiClone {
         this.loadingInterval = interval;
     }
 
-    async callGemini(message, signal) {
-        const url = "https://generativelanguage.googleapis.com/v1beta/models/" + this.currentModel + ":generateContent?key=" + this.apiKey;
+    async callGemini(message, signal, files = []) {
+        if (!this.apiKey) {
+            throw new Error('מפתח API לא מוגדר');
+        }
 
-        // פונקציה משופרת לספירת טוקנים
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.currentModel}:generateContent?key=${this.apiKey}`;
+
         const estimateTokens = (text) => {
-            if (!text) return 0;
-            const words = text.trim().split(/\s+/).length;
+            const words = text.split(/\s+/).length;
             const chars = text.length;
             return Math.ceil((words * 0.75) + (chars / 6));
         };
@@ -1579,77 +1619,78 @@ class GeminiClone {
             }
         }
 
-        console.log("Conversation History:", JSON.stringify(conversationHistory, null, 2));
-        console.log("Current Chat Messages:", JSON.stringify(currentChatMessages, null, 2));
-        const totalLength = conversationHistory.reduce((sum, msg) => sum + msg.content.length, 0);
-        const totalTokens = conversationHistory.reduce((sum, msg) => sum + estimateTokens(msg.content), 0);
-        console.log("Total history length (characters):", totalLength);
-        console.log("Estimated tokens:", totalTokens);
-
         const messages = conversationHistory.map(msg => ({
             role: msg.role === "assistant" ? "model" : "user",
-            parts: [{ text: msg.content }]
+            parts: [
+                { text: msg.content },
+                ...(msg.files || []).map(file => ({
+                    inlineData: {
+                        mimeType: file.type,
+                        data: file.base64
+                    }
+                }))
+            ]
         }));
 
-        // Use the initial system prompt from the current chat
         let systemPromptText = this.chats[this.currentChatId]?.systemPrompt || '';
         if (this.pageConfig === 'chat-page') {
             systemPromptText = this.CONSTANT_SYSTEM_PROMPT + (systemPromptText ? '\n' + systemPromptText : '');
         }
-
-        console.log("System Prompt Used:", systemPromptText);
 
         messages.unshift({
             role: "user",
             parts: [{ text: "הנחיית מערכת: " + systemPromptText }]
         });
 
-        const fileParts = this.files.length > 0 ? await Promise.all(this.files.map(async file => ({
+        const fileParts = files.length > 0 ? files.map(file => ({
             inlineData: {
                 mimeType: file.type,
-                data: await this.readFileAsBase64(file)
+                data: file.base64
             }
-        }))) : [];
+        })) : [];
 
         messages.push({
             role: "user",
             parts: [{ text: message }, ...fileParts]
         });
 
-        console.log("Messages sent to API:", JSON.stringify(messages, null, 2));
+        try {
+            const response = await fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    contents: messages,
+                    generationConfig: {
+                        temperature: this.settings.temperature,
+                        topK: this.settings.topK,
+                        topP: this.settings.topP,
+                        maxOutputTokens: this.tokenLimitDisabled ? undefined : this.settings.maxTokens
+                    },
+                    safetySettings: [
+                        { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
+                        { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_MEDIUM_AND_ABOVE" }
+                    ]
+                }),
+                signal
+            });
 
-        const response = await fetch(url, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                contents: messages,
-                generationConfig: {
-                    temperature: this.settings.temperature,
-                    topK: this.settings.topK,
-                    topP: this.settings.topP,
-                    maxOutputTokens: this.tokenLimitDisabled ? undefined : this.settings.maxTokens
-                },
-                safetySettings: [
-                    { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
-                    { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_MEDIUM_AND_ABOVE" }
-                ]
-            }),
-            signal
-        });
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error?.message || "Gemini API Error");
+            }
 
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error?.message || "Gemini API Error");
+            const data = await response.json();
+            if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
+                throw new Error("תגובה לא תקינה מ-Gemini API");
+            }
+
+            return data.candidates[0].content.parts[0].text;
+        } catch (error) {
+            if (error.message.includes('net::ERR_INTERNET_DISCONNECTED')) {
+                throw new Error('אין חיבור לאינטרנט');
+            }
+            throw error;
         }
-
-        const data = await response.json();
-        console.log("API Response:", JSON.stringify(data, null, 2));
-
-        if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
-            throw new Error("תגובה לא תקינה מ-Gemini API");
-        }
-
-        return data.candidates[0].content.parts[0].text;
     }
 
     abortGeneration() {
@@ -1670,7 +1711,6 @@ class GeminiClone {
         const messages = this.chats[this.currentChatId].messages;
         let messagesHTML = messages.map(message => this.createMessageHTML(message)).join('');
     
-        // הוספת מחוון שלוש הנקודות אם בטעינה וחלון הטעינה מוסתר
         if (this.isLoading && this.settings.hideLoadingOverlay) {
             messagesHTML += `
                 <div class="animated-dots">
@@ -1695,7 +1735,6 @@ class GeminiClone {
             }
         }
 
-        // גלילה מיידית לתחתית הצ'אט
         setTimeout(() => {
             this.chatContainer.scrollTop = this.chatContainer.scrollHeight;
         }, 0);
@@ -1716,15 +1755,39 @@ class GeminiClone {
         const senderName = isUser ? 'אתה' : promptIcon.label;
     
         let filesHtml = '';
-        if (isUser && message.files && message.files.length) {
-            filesHtml = `<div class="file-preview-list" style="margin-top:8px;">` +
-                message.files.map(f =>
-                    `<div class="file-preview">
-                        <span class="material-icons">${this.getFileIcon(f)}</span>
-                        <span title="${f.name}">${f.name.length > 18 ? f.name.slice(0,15)+'...' : f.name}</span>
-                        <span>(${this.formatFileSize(f.size)})</span>
-                    </div>`
-                ).join('') + `</div>`;
+        if (message.files && message.files.length) {
+            const images = message.files.filter(f => f.type.startsWith('image/'));
+            const otherFiles = message.files.filter(f => !f.type.startsWith('image/'));
+
+            filesHtml = '';
+        
+            if (images.length) {
+                filesHtml += `
+                    <div class="file-preview-list images-only">
+                        ${images.map(f => `
+                            <div class="image-thumbnail" title="${f.name}">
+                                <img src="data:${f.type};base64,${f.base64}" 
+                                     alt="${f.name}" 
+                                     class="chat-thumbnail"
+                                     onclick="showLightbox('data:${f.type};base64,${f.base64}')">
+                                <div class="image-name">${f.name}</div>
+                            </div>
+                        `).join('')}
+                    </div>`;
+            }
+
+            if (otherFiles.length) {
+                filesHtml += `
+                    <div class="file-preview-list other-files">
+                        ${otherFiles.map(f => `
+                            <div class="file-preview">
+                                <span class="material-icons">${this.getFileIcon(f)}</span>
+                                <span title="${f.name}">${f.name.length > 18 ? f.name.slice(0,15)+'...' : f.name}</span>
+                                <span>(${this.formatFileSize(f.size)})</span>
+                            </div>
+                        `).join('')}
+                    </div>`;
+            }
         }
         
         return `
@@ -1771,54 +1834,32 @@ class GeminiClone {
     }
 
     formatMessageContent(content) {
-        // Improved code handling with proper line breaks
         let formatted = content;
-        
-        // Code blocks - preserving actual line breaks
         formatted = formatted.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, lang, code) => {
             lang = lang || 'javascript';
-            // Don't convert to entities before Prism
             return `<pre class="code-block"><code class="language-${lang}">${code}</code>
                 <button class="copy-code-btn" title="העתק קוד"><span class="material-icons">content_copy</span></button>
             </pre>`;
         });
         
-        // Inline code
         formatted = formatted.replace(/`([^`]+)`/g, '<code>$1</code>');
-        
-        // Links
         formatted = formatted.replace(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
-        
-        // Headings
         formatted = formatted.replace(/^### (.*)$/gm, '<h3>$1</h3>');
         formatted = formatted.replace(/^## (.*)$/gm, '<h2>$1</h2>');
         formatted = formatted.replace(/^# (.*)$/gm, '<h1>$1</h1>');
-        
-        // Lists - improved to properly handle multi-level lists
         formatted = formatted.replace(/^- (.+)$/gm, '<li>$1</li>');
         formatted = formatted.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
         formatted = formatted.replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
-        
-        // Emphasis
         formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
         formatted = formatted.replace(/\*(.*?)\*/g, '<em>$1</em>');
-        
-        // Underline
         formatted = formatted.replace(/__(.*?)__/g, '<u>$1</u>');
-        
-        // Tables - improved for better parsing
         formatted = formatted.replace(/((?:\|.+\|(?:\n|$))+)/g, (table) => {
             const rows = table.trim().split('\n');
             let tableHtml = '<table>';
-            
-            // Check for header row
             if (rows.length > 1 && rows[1].replace(/[^|]/g, '') === rows[1]) {
-                // Has header separator
                 tableHtml += '<thead><tr>' + 
                     rows[0].split('|').filter(Boolean).map(cell => `<th>${cell.trim()}</th>`).join('') + 
                     '</tr></thead><tbody>';
-                
-                // Add data rows starting from index 2
                 for (let i = 2; i < rows.length; i++) {
                     tableHtml += '<tr>' + 
                         rows[i].split('|').filter(Boolean).map(cell => `<td>${cell.trim()}</td>`).join('') + 
@@ -1826,7 +1867,6 @@ class GeminiClone {
                 }
                 tableHtml += '</tbody>';
             } else {
-                // No header, all rows are data
                 for (const row of rows) {
                     tableHtml += '<tr>' + 
                         row.split('|').filter(Boolean).map(cell => `<td>${cell.trim()}</td>`).join('') + 
@@ -1837,7 +1877,6 @@ class GeminiClone {
             return tableHtml + '</table>';
         });
         
-        // Line breaks (only outside code blocks)
         formatted = formatted.replace(/(?<!<\/pre>)\n/g, '<br>');
         
         return formatted;
@@ -1857,28 +1896,48 @@ class GeminiClone {
             return;
         }
 
-        // מצא את הודעת המשתמש הקודמת
         let userMessageIndex = messageIndex - 1;
         if (userMessageIndex < 0 || messages[userMessageIndex].role !== 'user') {
             this.showToast('לא נמצאה הודעת משתמש קודמת', 'error');
             return;
         }
 
-        // מחק את הודעת העוזר ואת כל ההודעות שאחריה
+        const userMessage = messages[userMessageIndex];
+
+        this.files = [];
+        if (userMessage.files && userMessage.files.length > 0) {
+            try {
+                this.files = userMessage.files.filter(file => {
+                    if (!file.base64 || !/^[A-Za-z0-9+/=]+$/.test(file.base64)) {
+                        console.warn('Invalid base64 for file:', file.name);
+                        this.showToast(`קובץ לא תקין: ${file.name}`, 'error');
+                        return false;
+                    }
+                    return true;
+                }).map(file => ({
+                    name: file.name,
+                    size: file.size,
+                    type: file.type,
+                    base64: file.base64.startsWith('data:') ? file.base64.split(',')[1] : file.base64
+                }));
+            } catch (error) {
+                this.showToast('שגיאה בטעינת קבצים: ' + error.message, 'error');
+                console.error('File Processing Error:', error);
+                return;
+            }
+        }
+
+        this.renderFilePreview();
         this.chats[this.currentChatId].messages = messages.slice(0, userMessageIndex + 1);
+        this.chats[this.currentChatId].updatedAt = new Date().toISOString();
         this.saveChatData();
         this.renderMessages();
-
-        // שלח מחדש את הודעת המשתמש
-        const userMessage = messages[userMessageIndex].content;
-        this.files = messages[userMessageIndex].files || []; // שחזר קבצים אם יש
-        this.renderFilePreview();
         this.setLoading(true);
         this.startFakeProgressBar();
         this.showLoadingSteps();
         this.abortController = new AbortController();
 
-        this.callGemini(userMessage, this.abortController.signal)
+        this.callGemini(userMessage.content, this.abortController.signal, this.files)
             .then(response => {
                 const assistantMessage = {
                     id: this.generateMessageId(),
@@ -1886,8 +1945,7 @@ class GeminiClone {
                     content: response,
                     timestamp: new Date().toISOString(),
                     model: this.currentModel,
-                vote: null
-
+                    vote: null
                 };
 
                 this.chats[this.currentChatId].messages.push(assistantMessage);
@@ -1902,18 +1960,23 @@ class GeminiClone {
             .catch(error => {
                 if (error.name === 'AbortError') {
                     this.showToast('התגובה הופסקה', 'error');
+                } else if (error.message.includes('net::ERR_INTERNET_DISCONNECTED')) {
+                    this.showToast('אין חיבור לאינטרנט. אנא בדוק את החיבור ונסה שוב', 'error');
+                    console.error('Network Error:', error);
                 } else {
                     this.showToast('שגיאה בניסיון מחדש: ' + error.message, 'error');
+                    console.error('API Error:', error);
                 }
             })
             .finally(() => {
                 this.setLoading(false);
                 this.stopFakeProgressBar();
+                this.files = [];
+                this.renderFilePreview();
             });
     }
 
     bindMessageActions() {
-        // Copy code button functionality
         document.querySelectorAll('.copy-code-btn').forEach(btn => {
             btn.onclick = (e) => {
                 const code = btn.parentElement.querySelector('code').innerText;
@@ -1923,7 +1986,6 @@ class GeminiClone {
             };
         });
 
-        // Retry message button
         document.querySelectorAll('.retry-btn').forEach(btn => {
             btn.onclick = (e) => {
                 const msgEl = btn.closest('.message');
@@ -1933,7 +1995,6 @@ class GeminiClone {
             };
         });
         
-        // Copy message button
         document.querySelectorAll('.copy-btn').forEach(btn => {
             btn.onclick = (e) => {
                 const msg = btn.closest('.message').querySelector('.message-content').innerText;
@@ -1943,7 +2004,6 @@ class GeminiClone {
             };
         });
         
-        // Share message button
         document.querySelectorAll('.share-btn').forEach(btn => {
             btn.onclick = (e) => {
                 const msg = btn.closest('.message').querySelector('.message-content').innerText;
@@ -1953,7 +2013,6 @@ class GeminiClone {
             };
         });
         
-        // Delete message button
         document.querySelectorAll('.delete-btn').forEach(btn => {
             btn.onclick = (e) => {
                 const msgEl = btn.closest('.message');
@@ -1963,7 +2022,6 @@ class GeminiClone {
             };
         });
         
-        // Edit message button
         document.querySelectorAll('.edit-btn').forEach(btn => {
             btn.onclick = (e) => {
                 const msgEl = btn.closest('.message');
@@ -1973,7 +2031,6 @@ class GeminiClone {
             };
         });
 
-        // Like / Dislike buttons
         document.querySelectorAll('.message').forEach(messageEl => {
             const likeBtn = messageEl.querySelector('.like-btn');
             const dislikeBtn = messageEl.querySelector('.dislike-btn');
@@ -2050,32 +2107,39 @@ class GeminiClone {
 
     editMessage(messageId) {
         if (!this.currentChatId) return;
-        
+
         const messages = this.chats[this.currentChatId].messages;
         const messageIndex = messages.findIndex(msg => msg.id === messageId);
-        
-        if (messageIndex !== -1) {
-            const message = messages[messageIndex];
-            
-            // Only edit user messages
-            if (message.role === 'user') {
-                this.messageInput.value = message.content;
-                this.updateCharCount();
-                this.messageInput.focus();
-                
-                // Remove the message and all subsequent messages
-                this.chats[this.currentChatId].messages = messages.slice(0, messageIndex);
-                this.saveChatData();
-                this.renderMessages();
-                this.showToast('ערוך את ההודעה ושלח שוב', 'success');
-            }
-        }
-    }
 
+        if (messageIndex === -1 || messages[messageIndex].role !== 'user') {
+            this.showToast('לא ניתן לערוך הודעה זו', 'error');
+            return;
+        }
+
+        const message = messages[messageIndex];
+
+        this.messageInput.value = message.content;
+        this.updateCharCount();
+        this.messageInput.focus();
+
+        this.files = (message.files || []).filter(file => file.base64).map(file => ({
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            base64: file.base64
+        }));
+        this.filess = this.files;
+        this.renderFilePreview();
+
+        this.chats[this.currentChatId].messages = messages.slice(0, messageIndex);
+        this.chats[this.currentChatId].updatedAt = new Date().toISOString();
+        this.saveChatData();
+        this.renderMessages();
+        this.showToast('ערוך את ההודעה ושלח שוב', 'success');
+    }
 
     renderChatHistory() {
         if (this.searchQuery) {
-            // אם יש שאילתת חיפוש פעילה, השתמש ב-filterChatHistory
             this.filterChatHistory();
             return;
         }
@@ -2096,7 +2160,6 @@ class GeminiClone {
 
         const sortedChats = chatArray.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
         this.chatHistory.innerHTML = sortedChats.map(chat => {
-            console.log(`Rendering chat ID: ${chat.id}, SystemPrompt: ${chat.systemPrompt}, IconHtml: ${this.getPromptIcon(chat.systemPrompt).iconHtml}`); // דיבאג
             return `
                 <div class="history-item ${chat.id === this.currentChatId ? 'active' : ''}" data-chat-id="${chat.id}">
                     <div class="history-item-title">${this.getPromptIcon(chat.systemPrompt).iconHtml}${chat.title}</div>
@@ -2167,7 +2230,7 @@ class GeminiClone {
             action: {
                 text: 'בטל',
                 callback: () => {
-                    console.log('Restoring chat:', chatId); // דיבוג
+                    console.log('Restoring chat:', chatId);
                     this.chats[chatId] = deletedChat;
                     this.saveChatData();
                     this.renderChatHistory();
@@ -2234,25 +2297,17 @@ class GeminiClone {
     }
 
     cleanFileName(name) {
-        // הסרת תווים לא חוקיים לשמות קבצים, שמירה על תווים עבריים
         return name.replace(/[<>:"\/\\|?*\x00-\x1F]/g, '_').trim();
     }
 
     exportToPdf(chat, includeTimestamps, includeSystemPrompts) {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
-
-        // שימוש בגופן מובנה תומך עברית (Helvetica)
         doc.setFont('Helvetica', 'normal');
         doc.setFontSize(20);
-        
-        // כותרת הצ'אט, מיושר לימין
         doc.text(chat.title, 190, 20, { align: 'right' });
-
         doc.setFontSize(12);
         let y = 40;
-
-        // הוספת System Prompt אם נבחר
         if (includeSystemPrompts && chat.systemPrompt && this.isSystemPromptAllowed(chat.systemPrompt)) {
             doc.setFont('Helvetica', 'italic');
             doc.text('System Prompt:', 190, y, { align: 'right' });
@@ -2263,8 +2318,6 @@ class GeminiClone {
             doc.text(systemPromptLines, 190, y, { align: 'right' });
             y += systemPromptLines.length * 7 + 10;
         }
-
-        // הוספת כל ההודעות
         for (const msg of chat.messages) {
             const role = msg.role === 'user' ? 'אתה' : this.getPromptIcon(chat.systemPrompt).label;
 
@@ -2281,8 +2334,6 @@ class GeminiClone {
             }
 
             y += 7;
-
-            // ניקוי התוכן עבור PDF
             const content = msg.content.replace(/```[\s\S]*?```/g, '[CODE BLOCK]')
                                    .replace(/<[^>]*>/g, '')
                                    .replace(/\!\[.*?\]\(.*?\)/g, '[IMAGE]')
@@ -2305,21 +2356,17 @@ class GeminiClone {
             }
         }
 
-        // הוספת תחתית
         const date = new Date().toLocaleString('he-IL');
         doc.setFontSize(8);
         doc.setTextColor(100, 100, 100);
         doc.text(`יוצא ב: ${date}`, 20, 290);
         doc.text('Gemini Clone', 190, 290, { align: 'right' });
-
-        // שמירת הקובץ עם השם המעודכן: chat_Gemini_<שם_הצ'אט>
         const cleanTitle = this.cleanFileName(chat.title);
         doc.save(`chat_Gemini_${cleanTitle}`);
         this.showToast('הצ\'אט יוצא בהצלחה ל-PDF', 'success');
     }
 
     exportToDocx(chat, includeTimestamps, includeSystemPrompts) {
-        // יצירת HTML עם תאימות משופרת ל-Word
         let html = `<!DOCTYPE html>
         <html dir="rtl" lang="he">
         <head>
@@ -2432,17 +2479,14 @@ class GeminiClone {
         <body>
             <div class="title">${chat.title}</div>`;
 
-        // הוספת System Prompt אם נבחר
         if (includeSystemPrompts && chat.systemPrompt && this.isSystemPromptAllowed(chat.systemPrompt)) {
             html += `<div class="system-prompt">
                 <div>System Prompt:</div>
                 <div>${this.formatMessageContent(chat.systemPrompt)}</div>
             </div>`;
         }
-
-        // הוספת כל ההודעות עם עיצוב Markdown מלא
         for (const msg of chat.messages) {
-            const role = msg.role === 'user' ? 'אתה' : this.getPromptIcon(chat.systemPrompt).label; // שימוש בשם העוזר
+            const role = msg.role === 'user' ? 'אתה' : this.getPromptIcon(chat.systemPrompt).label;
             const roleClass = msg.role === 'user' ? 'user' : 'assistant';
 
             html += `<div class="message">
@@ -2460,8 +2504,6 @@ class GeminiClone {
         }
 
         html += `</body></html>`;
-
-        // יצירת Blob והורדה כקובץ doc
         const blob = new Blob([new TextEncoder().encode(html)], { type: 'application/msword' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
@@ -2492,7 +2534,6 @@ class GeminiClone {
             text += `:\n${msg.content}\n\n`;
         }
 
-        // יצירת Blob והורדה
         const blob = new Blob([new TextEncoder().encode(text)], { type: 'text/plain' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
@@ -2516,7 +2557,6 @@ class GeminiClone {
         const currentText = this.messageInput.value;
         
         if (action === 'translate') {
-            // Translation without API: open translate.google.com with the text
             const isHebrew = /[\u0590-\u05FF]/.test(currentText);
             const targetLang = isHebrew ? 'en' : 'he';
             window.open(`https://translate.google.com/?sl=auto&tl=${targetLang}&text=${encodeURIComponent(currentText)}`, '_blank');
@@ -2546,7 +2586,6 @@ class GeminiClone {
         this.contextMenu.style.left = x + 'px';
         this.contextMenu.style.top = y + 'px';
 
-        // הצג/הסתר כפתור עריכה לפי סוג ההודעה
         const editItem = this.contextMenu.querySelector('[data-action="edit"]');
         if (messageElement.classList.contains('user')) {
             editItem.style.display = '';
@@ -2597,7 +2636,6 @@ class GeminiClone {
         }
         this.sendBtn.disabled = loading || !this.messageInput.value.trim();
 
-        // Stop button in loading overlay
         let stopBtnInOverlay = document.getElementById('stopBtnInOverlay');
         if (!stopBtnInOverlay) {
             stopBtnInOverlay = document.createElement('button');
@@ -2609,7 +2647,6 @@ class GeminiClone {
         }
         stopBtnInOverlay.style.display = (loading && !this.settings.hideLoadingOverlay) ? 'inline-flex' : 'none';
 
-        // Hide bottom stop button
         this.stopBtn.style.display = 'none';
 
         if (!loading && this.loadingInterval) {
@@ -2618,7 +2655,6 @@ class GeminiClone {
                 step.classList.remove('active');
             });
         }
-        // רינדור מחדש של ההודעות כדי להציג/להסתיר את מחוון הנקודות
         if (this.settings.hideLoadingOverlay) {
             this.renderMessages();
         }
@@ -2677,9 +2713,21 @@ class GeminiClone {
         const input = document.createElement('input');
         input.type = 'file';
         input.multiple = true;
-        
+        input.accept = 'image/png,image/jpeg,image/webp,image/heic,image/heif,application/pdf,text/plain,text/markdown,audio/wav,audio/mp3,audio/aiff,audio/aac,audio/ogg,audio/flac,video/mp4,video/mpeg,video/mov,video/avi,video/x-flv,video/mpg,video/webm,video/wmv,video/3gpp,text/x-c,text/x-c++,text/x-python,text/x-java,application/x-httpd-php,text/x-sql,text/html,.c,.cpp,.py,.java,.php.ts,.ts,.sql,.html,text/javascript,text/typescript';
         input.onchange = (e) => {
-            const files = Array.from(e.target.files);
+            const allowedTypes = [
+                'image/png', 'image/jpeg', 'image/webp', 'image/heic', 'image/heif',
+                'application/pdf', 'text/plain', 'text/markdown',
+                'audio/wav', 'audio/mp3', 'audio/aiff', 'audio/aac', 'audio/ogg', 'audio/flac',
+                'video/mp4', 'video/mpeg', 'video/mov', 'video/avi', 'video/x-flv', 'video/mpg',
+                'video/webm', 'video/wmv', 'video/3gpp',
+                'text/x-c', 'text/x-c++', 'text/x-python', 'text/x-java', 'application/x-httpd-php',
+                'text/x-sql', 'text/html', 'text/javascript', 'text/typescript'
+            ];
+            const files = Array.from(e.target.files).filter(file => allowedTypes.includes(file.type));
+            if (files.length !== e.target.files.length) {
+                alert('נבחרו קבצים לא נתמכים. אנא בחרו רק קבצים נתמכים.');
+            }
             this.files.push(...files);
             this.renderFilePreview();
         };
@@ -2688,9 +2736,19 @@ class GeminiClone {
     }
 
     handleDropFiles(fileList) {
-        const files = Array.from(fileList);
-        this.files.push(...files);
-        this.renderFilePreview();
+        const files = Array.from(fileList)
+            .filter(file => this.allowedFileTypes.includes(file.type));
+
+        if (files.length > 0) {
+            this.files.push(...files);
+            this.renderFilePreview();
+        }
+
+        const invalidFiles = Array.from(fileList)
+            .filter(file => !this.allowedFileTypes.includes(file.type));
+        if (invalidFiles.length > 0) {
+            this.showToast('קבצים לא נתמכים הוסרו.', 'neutral');
+        }
     }
 
     renderFilePreview() {
@@ -2760,7 +2818,6 @@ class GeminiClone {
             return;
         }
 
-        // מצא את הודעת המשתמש האחרונה
         let userMessageIndex = messages.length - 1;
         while (userMessageIndex >= 0 && messages[userMessageIndex].role !== 'user') {
             userMessageIndex--;
@@ -2771,19 +2828,28 @@ class GeminiClone {
             return;
         }
 
-        // הסר את כל ההודעות שאחריה (אם קיימת תגובת עוזר)
+        const lastUserMessage = messages[userMessageIndex];
+
+        this.files = (lastUserMessage.files || []).filter(file => file.base64).map(file => ({
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            base64: file.base64
+        }));
+        this.filess = this.files;
+        this.renderFilePreview();
+
         this.chats[this.currentChatId].messages = messages.slice(0, userMessageIndex + 1);
+        this.chats[this.currentChatId].updatedAt = new Date().toISOString();
         this.saveChatData();
         this.renderMessages();
 
-        // שלח שוב את ההודעה
-        const lastUserMessage = messages[userMessageIndex].content;
         this.setLoading(true);
         this.startFakeProgressBar();
         this.showLoadingSteps();
         this.abortController = new AbortController();
 
-        this.callGemini(lastUserMessage, this.abortController.signal)
+        this.callGemini(lastUserMessage.content, this.abortController.signal, this.files)
             .then(response => {
                 const assistantMessage = {
                     id: this.generateMessageId(),
@@ -2806,18 +2872,26 @@ class GeminiClone {
             .catch(error => {
                 if (error.name === 'AbortError') {
                     this.showToast('התגובה הופסקה', 'error');
+                } else if (error.message.includes('net::ERR_INTERNET_DISCONNECTED')) {
+                    this.showToast('אין חיבור לאינטרנט. אנא בדוק את החיבור ונסה שוב', 'error');
+                    console.error('Network Error:', error);
                 } else {
                     this.showToast('שגיאה ביצירת תשובה מחדש: ' + error.message, 'error');
+                    console.error('API Error:', error);
                 }
             })
             .finally(() => {
                 this.setLoading(false);
                 this.stopFakeProgressBar();
+                this.files = [];
+                this.filess = [];
+                this.renderFilePreview();
             });
     }
 
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    new GeminiClone();
+    const app = new GeminiClone();
+    window.showLightbox = (src) => app.showLightbox(src);
 });
