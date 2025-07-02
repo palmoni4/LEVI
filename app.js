@@ -1835,9 +1835,16 @@ class GeminiClone {
 
     formatMessageContent(content) {
         let formatted = content;
+        
         formatted = formatted.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, lang, code) => {
             lang = lang || 'javascript';
-            return `<pre class="code-block"><code class="language-${lang}">${code}</code>
+            const escapedCode = code
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+            return `<pre class="code-block"><code class="language-${lang}">${escapedCode}</code>
                 <button class="copy-code-btn" title="העתק קוד"><span class="material-icons">content_copy</span></button>
             </pre>`;
         });
@@ -1853,6 +1860,7 @@ class GeminiClone {
         formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
         formatted = formatted.replace(/\*(.*?)\*/g, '<em>$1</em>');
         formatted = formatted.replace(/__(.*?)__/g, '<u>$1</u>');
+        
         formatted = formatted.replace(/((?:\|.+\|(?:\n|$))+)/g, (table) => {
             const rows = table.trim().split('\n');
             let tableHtml = '<table>';
@@ -1873,11 +1881,24 @@ class GeminiClone {
                         '</tr>';
                 }
             }
-            
             return tableHtml + '</table>';
         });
         
-        formatted = formatted.replace(/(?<!<\/pre>)\n/g, '<br>');
+        // שמירת code blocks זמנית
+        const tempCodeBlocks = [];
+        formatted = formatted.replace(/<pre class="code-block">[\s\S]*?<\/pre>/g, (match) => {
+            const index = tempCodeBlocks.length;
+            tempCodeBlocks.push(match);
+            return `__TEMP_CODE_${index}__`;
+        });
+
+        // המרת מעברי שורות ל-<br> רק מחוץ ל-code blocks
+        formatted = formatted.replace(/\n/g, '<br>');
+
+        // החזרת code blocks
+        tempCodeBlocks.forEach((block, index) => {
+            formatted = formatted.replace(`__TEMP_CODE_${index}__`, block);
+        });
         
         return formatted;
     }
