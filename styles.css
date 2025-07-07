@@ -63,6 +63,18 @@
     cursor: pointer;
 }
 
+.history-footer .button-group {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+}
+
+#clearAllDataBtn {
+    width: 100%;
+    margin-top: 10px;
+    text-align: center;
+}
+
 .profile-image-menu .export-option:hover {
     background: #f5f5f5;
 }
@@ -548,20 +560,72 @@ mark {
 }
 
 .history-footer {
-    margin-top: auto; /* ממקם את הכפתורים בתחתית הסרגל */
-    padding: 16px;
     display: flex;
-    flex-direction: row; /* כפתורים זה לצד זה במצב לא מכווץ */
-    justify-content: space-between; /* רווח שווה בין הכפתורים */
-    gap: 0px;
+    flex-direction: column; 
+    gap: 10px;
+    padding: 10px;
 }
 
-.history-sidebar.collapsed .history-footer {
+.button-group {
     display: flex;
-    flex-direction: column; /* כפתורים אחד מעל השני */
+    flex-direction: row;
+    gap: 10px;
+    justify-content: space-between; 
+}
+
+.clear-btn-wrapper {
+    display: flex;
+    justify-content: stretch;
+}
+
+.icon-btn, .action-btn {
+    display: flex;
     align-items: center;
-    justify-content: flex-end;
-    margin-bottom: 20px;
+    gap: 8px; 
+    padding: 8px 12px;
+    background-color: #f5f5f5;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    text-align: right;
+    font-size: 14px;
+    width: 100%; 
+}
+
+.icon-btn:hover, .action-btn:hover {
+    background-color: #e0e0e0;
+}
+
+#clearAllDataBtn {
+    background-color: #ff4d4d;
+    color: white;
+}
+
+#clearAllDataBtn:hover {
+    background-color: #cc0000; /* צבע אדום כהה יותר */
+    color: white; /* לשמור על טקסט בהיר */
+    border-radius: 8px; /* מעגלים בקצוות */
+    padding: 10px 14px; /* להגדיל את הרווח הפנימי למראה יותר נעים */
+    margin: 0;
+    transform: scale(1.05); /* הגדלת הכפתור במעט בעת ריחוף */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); /* הוספת צלליה להדגשה */
+    transition: all 0.3s ease-in-out; /* מעבר חלק ויפה */
+}
+
+#clearAllDataBtn {
+    transition: all 0.3s ease;
+}
+
+@media (max-width: 600px) {
+    .button-group {
+        flex-direction: column;
+        gap: 8px;
+    }
+}
+
+.history-sidebar.collapsed .button-group {
+    flex-direction: column; /* מציב את כפתורי הייבוא והייצוא אנכית במצב מכווץ */
+    gap: 8px; /* רווח קטן יותר בין הכפתורים במצב מכווץ */
 }
 
 .history-sidebar.collapsed .history-footer .icon-btn:hover {

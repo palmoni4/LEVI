@@ -265,6 +265,18 @@ class GeminiClone {
         this.historyToggle = document.querySelector('.history-toggle');
         this.loadPageBtn = document.getElementById('loadPageBtn');
         this.createImageLightbox();
+        this.clearAllDataBtn = document.getElementById('clearAllDataBtn');
+        this.shareBtn = document.getElementById('shareBtn');
+        this.regenerateBtn = document.getElementById('regenerateBtn');
+        if (!this.currentChatId) {
+            if (this.exportBtn) this.exportBtn.style.display = 'none';
+            if (this.shareBtn) this.shareBtn.style.display = 'none';
+            if (this.regenerateBtn) this.regenerateBtn.style.display = 'none';
+            if (this.exportDropdownBtn) this.exportDropdownBtn.style.display = 'none';
+            if (this.exportDropdownContent) this.exportDropdownContent.style.display = 'none';
+            const editChatTitleBtn = document.getElementById('editChatTitleBtn');
+            if (editChatTitleBtn) editChatTitleBtn.style.display = 'none';
+        }
         
         this.geminiApiKey = document.getElementById('geminiApiKey');
         this.geminiModel = document.getElementById('geminiModel');
@@ -424,6 +436,11 @@ class GeminiClone {
         this.hideLoadingOverlayCheckbox.addEventListener('change', (e) => this.updateHideLoadingOverlay(e.target.checked));
         this.exportHistoryBtn.addEventListener('click', () => this.exportHistoryAndSettings());
         this.importHistoryBtn.addEventListener('click', () => this.handleImport());
+        if (this.clearAllDataBtn) {
+            this.clearAllDataBtn.addEventListener('click', () => this.clearAllData());
+        } else {
+            console.warn('clearAllDataBtn element not found');
+        }
 
         if (this.historySearch) {
             this.historySearch.addEventListener('input', () => this.debounceFilterChatHistory());
@@ -715,6 +732,58 @@ class GeminiClone {
         }
     }
 
+    clearAllData() {
+        if (!confirm('האם אתה בטוח שברצונך למחוק את כל הנתונים השמורים, כולל היסטוריה, הגדרות והעדפות? פעולה זו בלתי הפיכה!')) {
+            return;
+        }
+
+        // מחיקת כל הנתונים מ-localStorage
+        localStorage.removeItem('gemini-chats');
+        localStorage.removeItem('gemini-api-key');
+        localStorage.removeItem('gemini-model');
+        localStorage.removeItem('chatHistoryEnabled');
+        localStorage.removeItem('gemini-settings');
+        localStorage.removeItem('gemini-system-prompt');
+        localStorage.removeItem('gemini-system-prompt-template');
+        localStorage.removeItem('luxury-mode');
+        localStorage.removeItem('token-limit-disabled');
+        localStorage.removeItem('user-profile-image');
+        localStorage.removeItem('use-custom-profile-image');
+        localStorage.removeItem('history-sidebar-collapsed');
+
+        // איפוס משתני האפליקציה
+        this.chats = {};
+        this.currentChatId = null;
+        this.apiKey = '';
+        this.currentModel = 'gemini-2.5-flash-lite-preview-06-17';
+        this.chatHistoryEnabled = true;
+        this.settings = {
+            temperature: 0.7,
+            maxTokens: 4096,
+            topP: 0.95,
+            topK: 40,
+            streamResponse: true,
+            includeChatHistory: true,
+            includeAllChatHistory: false,
+            hideLoadingOverlay: false
+        };
+        this.systemPrompt = '';
+        this.systemPromptTemplate = '';
+        this.isLuxuryMode = false;
+        this.tokenLimitDisabled = false;
+        this.userProfileImage = null;
+        this.files = [];
+
+        // איפוס ממשק המשתמש
+        this.resetToWelcomeScreen();
+        this.loadSettings();
+        this.loadTheme();
+        this.loadLuxuryMode();
+        this.renderChatHistory();
+
+        this.showToast('כל הנתונים נמחקו בהצלחה', 'success');
+    }
+
     exportHistoryAndSettings() {
         const storedImage = localStorage.getItem('user-profile-image');
         const useCustom = localStorage.getItem('use-custom-profile-image') === 'true';
@@ -900,9 +969,12 @@ class GeminiClone {
         this.welcomeScreen.style.display = 'flex';
         this.chatTitle.textContent = 'צ\'אט חדש';
         const editChatTitleBtn = document.getElementById('editChatTitleBtn');
-        if (editChatTitleBtn) {
-            editChatTitleBtn.style.display = 'none';
-        }
+        if (this.editChatTitleBtn) this.editChatTitleBtn.style.display = 'none';
+        if (this.exportBtn) this.exportBtn.style.display = 'none';
+        if (this.shareBtn) this.shareBtn.style.display = 'none';
+        if (this.regenerateBtn) this.regenerateBtn.style.display = 'none';
+        if (this.exportDropdownBtn) this.exportDropdownBtn.style.display = 'none';
+        if (this.exportDropdownContent) this.exportDropdownContent.style.display = 'none';
         this.messageInput.value = '';
         this.updateCharCount();
         this.messageInput.style.height = 'auto';
@@ -1003,18 +1075,40 @@ class GeminiClone {
         return models[modelId] || modelId;
     }
 
+    loadConfigScript() {
+        return new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = '../config.js'; // הנתיב לקובץ config.js
+            script.async = true;
+            script.onload = () => resolve();
+            script.onerror = () => reject(new Error('שגיאה בטעינת config.js'));
+            document.head.appendChild(script);
+        });
+    }
+
     async validateApiKey() {
+        await this.loadConfigScript();
         if (!this.apiKey) return;
         try {
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${this.apiKey}`);
+            const response = await fetch(`https://${apiAddressToUse}.googleapis.com/v1/models?key=${this.apiKey}`);
             if (response.ok) {
                 this.showApiStatus('API Key תקף ומחובר', 'success');
             } else {
                 this.showApiStatus('API Key לא תקף', 'error');
             }
-        } catch (error) {
-            this.showApiStatus('שגיאה בבדיקת API Key', 'error');
-            this.showToast('שגיאה בבדיקת API Key', 'error');
+         } catch (error) {
+            try {
+                const fallbackResponse = await fetch(`https://generativelanguage.googleapis.com/v1/models?key=${this.apiKey}`);
+                if (fallbackResponse.ok) {
+                    this.showApiStatus('API Key תקף ומחובר', 'success');
+                } else {
+                    this.showApiStatus('API Key לא תקף', 'error');
+                    this.showToast('API Key לא תקף', 'error');
+                }
+            } catch (fallbackError) {
+                this.showApiStatus('שגיאה בבדיקת API Key', 'error');
+                this.showToast('שגיאה בבדיקת API Key', 'error');
+            }
         }
     }
 
@@ -1320,6 +1414,12 @@ class GeminiClone {
                 updatedAt: new Date().toISOString()
             };
             this.showChatInterface();
+            if (this.exportBtn) this.exportBtn.style.display = 'inline-block';
+            if (this.shareBtn) this.shareBtn.style.display = 'inline-block';
+            if (this.regenerateBtn) this.regenerateBtn.style.display = 'inline-block';
+            if (this.exportDropdownBtn) this.exportDropdownBtn.style.display = 'inline-block';
+            if (this.exportDropdownContent) this.exportDropdownContent.style.display = 'block';
+            if (this.editChatTitleBtn) this.editChatTitleBtn.style.display = 'none';
         }
 
         const message = this.messageInput.value.trim();
@@ -2221,6 +2321,15 @@ class GeminiClone {
         if (editChatTitleBtn) {
             editChatTitleBtn.style.display = chat.title === 'צ\'אט חדש' ? 'none' : 'inline-block';
         }
+        if (this.exportBtn) {
+            this.exportBtn.style.display = 'inline-block';
+        }
+        if (this.shareBtn) {
+            this.shareBtn.style.display = 'inline-block';
+        }
+        if (this.regenerateBtn) {
+            this.regenerateBtn.style.display = 'inline-block';
+        }
     }
 
     deleteChat(chatId) {
@@ -2240,6 +2349,7 @@ class GeminiClone {
         this.saveChatData();
 
         if (chatId === currentChatId) {
+            this.resetToWelcomeScreen();
             this.currentChatId = null;
             this.welcomeScreen.style.display = 'flex';
             this.chatMessages.style.display = 'none';
