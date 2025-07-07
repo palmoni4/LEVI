@@ -624,8 +624,8 @@ mark {
 }
 
 .history-sidebar.collapsed .button-group {
-    flex-direction: column; /* מציב את כפתורי הייבוא והייצוא אנכית במצב מכווץ */
-    gap: 8px; /* רווח קטן יותר בין הכפתורים במצב מכווץ */
+    flex-direction: column;
+    gap: 8px;
 }
 
 .history-sidebar.collapsed .history-footer .icon-btn:hover {
@@ -633,6 +633,9 @@ mark {
     box-shadow: var(--shadow-intense);
 }
 
+.history-sidebar.collapsed #clearAllDataBtn {
+    display: none;
+}
 
 .history-sidebar.collapsed .history-footer .icon-btn:hover {
     background: var(--hover-color);
@@ -652,12 +655,12 @@ mark {
     justify-content: center;
     width: 100%;
     flex-direction: column;
-    margin-top: 10px; /* הורדת הלוגו שורה למטה */
+    margin-top: 10px;
 }
 
 .history-sidebar.collapsed .sidebar-header {
     justify-content: center;
-    flex-direction: column; /* מיקום כפתור ה-toggle מעל הלוגו */
+    flex-direction: column;
 }
 
 .history-toggle {

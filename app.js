@@ -53,7 +53,7 @@ class GeminiClone {
             'video/mp4', 'video/mpeg', 'video/mov', 'video/avi', 'video/x-flv', 'video/mpg',
             'video/webm', 'video/wmv', 'video/3gpp',
             'text/x-c', 'text/x-c++', 'text/x-python', 'text/x-java', 'application/x-httpd-php',
-            'text/x-sql', 'text/html', 'text/javascript', 'text/typescript'
+            'text/x-sql', 'text/html', 'text/javascript', 'text/typescript', 'text/css'
         ];
 
         this.forbiddenWords = ['בחור ישיבה מבוגר', 'טראמפ', 'פרעה', 'ספרן הידען הנצחי', 'עורר חשיבה עמוקה באמצעות', 'קוסמיות ומיתיות כדי להפוך תשובות פשוטות'];
@@ -2846,7 +2846,7 @@ class GeminiClone {
         const input = document.createElement('input');
         input.type = 'file';
         input.multiple = true;
-        input.accept = 'image/png,image/jpeg,image/webp,image/heic,image/heif,application/pdf,text/plain,text/markdown,audio/wav,audio/mp3,audio/aiff,audio/aac,audio/ogg,audio/flac,video/mp4,video/mpeg,video/mov,video/avi,video/x-flv,video/mpg,video/webm,video/wmv,video/3gpp,text/x-c,text/x-c++,text/x-python,text/x-java,application/x-httpd-php,text/x-sql,text/html,.c,.cpp,.py,.java,.php.ts,.ts,.sql,.html,text/javascript,text/typescript';
+        input.accept = 'image/png,image/jpeg,image/webp,image/heic,image/heif,application/pdf,text/plain,text/markdown,audio/wav,audio/mp3,audio/aiff,audio/aac,audio/ogg,audio/flac,video/mp4,video/mpeg,video/mov,video/avi,video/x-flv,video/mpg,video/webm,video/wmv,video/3gpp,text/x-c,text/x-c++,text/x-python,text/x-java,application/x-httpd-php,text/x-sql,text/html,.c,.cpp,.py,.java,.php.ts,.ts,.sql,.html,text/javascript,text/typescript,text/css';
         input.onchange = (e) => {
             const allowedTypes = [
                 'image/png', 'image/jpeg', 'image/webp', 'image/heic', 'image/heif',
@@ -2855,7 +2855,7 @@ class GeminiClone {
                 'video/mp4', 'video/mpeg', 'video/mov', 'video/avi', 'video/x-flv', 'video/mpg',
                 'video/webm', 'video/wmv', 'video/3gpp',
                 'text/x-c', 'text/x-c++', 'text/x-python', 'text/x-java', 'application/x-httpd-php',
-                'text/x-sql', 'text/html', 'text/javascript', 'text/typescript'
+                'text/x-sql', 'text/html', 'text/javascript', 'text/typescript', 'text/css'
             ];
             const files = Array.from(e.target.files).filter(file => allowedTypes.includes(file.type));
             if (files.length !== e.target.files.length) {
