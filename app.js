@@ -1778,6 +1778,9 @@ class GeminiClone {
 
             if (!response.ok) {
                 const errorData = await response.json();
+                if (response.status === 418) {
+                    return "אופסס... נטפרי לא מסכים לי לדבר איתך על זה.";
+                }
                 throw new Error(errorData.error?.message || "Gemini API Error");
             }
 
