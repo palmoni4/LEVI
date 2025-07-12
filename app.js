@@ -1680,31 +1680,23 @@ class GeminiClone {
             });
             if (!response.ok) {
                 const errorData = await response.json();
-                console.error("--- Gemini API Error Response ---");
-                console.error(errorData);
-                console.error("-------------------------------");
-                throw new Error(errorData.error?.message || `API Error: ${response.status} ${response.statusText}`);
+                if (response.status === 418) {
+                    return "אופסס... נטפרי לא מסכים לי לדבר איתך על זה.";
+                }
+                throw new Error(errorData.error?.message || "Gemini API Error");
             }
+
             const data = await response.json();
-            const assistantMessageContent = data.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (!assistantMessageContent) {
-                console.warn('No content received from Gemini API. Full response:', data);
-                throw new Error("לא התקבלה תגובה מהמודל.");
+            if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
+                throw new Error("תגובה לא תקינה מ-Gemini API");
             }
-            return assistantMessageContent;
+
+            return data.candidates[0].content.parts[0].text;
         } catch (error) {
-            console.error("--- General Error in callGemini ---");
-            console.error(error);
-            console.error("---------------------------------");
-            if (error.name === 'AbortError') {
-                throw new Error('הבקשה בוטלה');
-            } else if (error.message.includes('net::ERR_INTERNET_DISCONNECTED')) {
+            if (error.message.includes('net::ERR_INTERNET_DISCONNECTED')) {
                 throw new Error('אין חיבור לאינטרנט');
             }
             throw error;
-        } finally {
-            this.setLoading(false);
-            this.stopFakeProgressBar();
         }
     }
     abortGeneration() {
