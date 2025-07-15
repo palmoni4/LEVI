@@ -2343,14 +2343,16 @@ html[data-luxury="true"] .welcome-title {
     box-shadow: 0 0 15px rgba(230, 194, 0, 0.3);
 }
 
-/* Code Highlighting */
 .message-content pre,
 .code-block {
     background: #23272e !important;
     color: #fff !important;
     border-radius: 8px;
+    padding: 3em 1em 1em 1em;
     padding: 1em;
     overflow-x: auto;
+    overflow-y: auto;
+    max-height: 370px;
     font-size: 15px;
     margin: 1em 0;
     position: relative;
@@ -2362,6 +2364,9 @@ html[data-luxury="true"] .welcome-title {
 [data-luxury="true"] .code-block {
     background: #0f1528 !important;
     border: 1px solid rgba(230, 194, 0, 0.1);
+    overflow-x: auto;
+    overflow-y: auto;
+    max-height: 370px;
 }
 
 .message-content code {
@@ -2384,6 +2389,7 @@ html[data-luxury="true"] .welcome-title {
 
 /* Copy code button in code block */
 .copy-code-btn {
+	transform: translateY(-35px);
     position: absolute;
     left: 0.5rem;
     top: 0.5rem;
@@ -2400,6 +2406,26 @@ html[data-luxury="true"] .welcome-title {
 .copy-code-btn:hover {
     background: var(--hover-color);
     color: var(--primary-color);
+}
+
+.lang-code {
+    position: absolute;
+	right: 0rem;
+	transform: translateY(-48px);
+	font-size: 1rem;
+	color: var(--text-secondary);
+	background-color:#ccc;
+	border-radius: 2px 2px 2px 2px;
+	border: none;
+}
+ 
+.title-code {
+    position: sticky;
+	left: 0;
+	height: 2px;
+	background-color: #ccc;
+	width: 100%;
+	margin-top: 22px;
 }
 
 /* Additional Effects */

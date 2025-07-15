@@ -1858,17 +1858,28 @@ class GeminiClone {
 
     formatMessageContent(content) {
         let formatted = content;
-        
-        formatted = formatted.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, lang, code) => {
+		
+		formatted = formatted.replace(/```([\s\S]*?)```/g, (match) => {
+			match = match.replace(/&/g, '&amp;');
+			return match;
+		})
+		
+		formatted = formatted.replace(/</g, '&lt;').replace(/>/g, '&gt;')
+		
+        formatted = formatted.replace(/```(\w+)?([^a-zA-Z])([\s\S]*?)```/g, (match, lang, symbol, code) => {
             lang = lang || 'javascript';
+			if (symbol !== '\n') {
+				code = symbol + code
+			}
+			console.log(symbol)
             const escapedCode = code
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
                 .replace(/"/g, '&quot;')
                 .replace(/'/g, '&#39;');
-            return `<pre class="code-block"><code class="language-${lang}">${escapedCode}</code>
-                <button class="copy-code-btn" title="העתק קוד"><span class="material-icons">content_copy</span></button>
+            return `<pre class="code-block">
+<div class="title-code">
+<button class="lang-code"> '${lang}' </button>
+<button class="copy-code-btn" title="העתק קוד"><span class="material-icons">content_copy</span></button>
+</div><code class="language-${lang}">${escapedCode}</code>
             </pre>`;
         });
         
@@ -1914,10 +1925,10 @@ class GeminiClone {
             tempCodeBlocks.push(match);
             return `__TEMP_CODE_${index}__`;
         });
-
+ 
         // המרת מעברי שורות ל-<br> רק מחוץ ל-code blocks
         formatted = formatted.replace(/\n/g, '<br>');
-
+ 
         // החזרת code blocks
         tempCodeBlocks.forEach((block, index) => {
             formatted = formatted.replace(`__TEMP_CODE_${index}__`, block);
