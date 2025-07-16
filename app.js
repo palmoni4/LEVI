@@ -2034,13 +2034,12 @@ class GeminiClone {
     bindMessageActions() {
         document.querySelectorAll('.copy-code-btn').forEach(btn => {
             btn.onclick = (e) => {
-                const code = btn.parentElement.querySelector('code').innerText;
+                const code = btn.closest('.title-code').nextElementSibling.innerText;
                 navigator.clipboard.writeText(code);
                 this.showToast('הקוד הועתק', 'success');
                 e.stopPropagation();
             };
         });
-
         document.querySelectorAll('.retry-btn').forEach(btn => {
             btn.onclick = (e) => {
                 const msgEl = btn.closest('.message');
