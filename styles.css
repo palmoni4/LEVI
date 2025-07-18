@@ -2342,7 +2342,6 @@ html[data-luxury="true"] .welcome-title {
     border-top-color: var(--primary-color);
     box-shadow: 0 0 15px rgba(230, 194, 0, 0.3);
 }
-
 .message-content pre,
 .code-block {
     background: #23272e !important;
@@ -2387,12 +2386,21 @@ html[data-luxury="true"] .welcome-title {
     font-family: 'Fira Mono', 'Consolas', monospace;
 }
 
-/* Copy code button in code block */
+.code-header {
+    position: sticky;
+    top: 0;
+    background: inherit;
+    z-index: 10;
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 40px;
+    margin: -1rem -1rem 0 -1rem;
+}
+
 .copy-code-btn {
-	transform: translateY(-35px);
-    position: absolute;
-    left: 0.5rem;
-    top: 0.5rem;
     background: none;
     border: none;
     color: var(--text-secondary);
@@ -2401,6 +2409,7 @@ html[data-luxury="true"] .welcome-title {
     font-size: 1rem;
     z-index: 2;
     transition: background 0.2s;
+    padding: 0.25rem 0.5rem;
 }
 
 .copy-code-btn:hover {
@@ -2409,26 +2418,40 @@ html[data-luxury="true"] .welcome-title {
 }
 
 .lang-code {
-    position: absolute;
-	right: 0rem;
-	transform: translateY(-48px);
-	font-size: 1rem;
-	color: var(--text-secondary);
-	background-color:#ccc;
-	border-radius: 2px 2px 2px 2px;
-	border: none;
-}
- 
-.title-code {
-    position: sticky;
-	left: 0;
-	height: 2px;
-	background-color: #ccc;
-	width: 100%;
-	margin-top: 22px;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    padding: 0.25rem 0.5rem;
+    border: none;
 }
 
-/* Additional Effects */
+.copy-code-btn.old-style {
+    transform: translateY(-35px);
+    position: absolute;
+    left: 0.5rem;
+    top: 0.5rem;
+}
+
+.lang-code.old-style {
+    position: absolute;
+    right: 0rem;
+    transform: translateY(-48px);
+    font-size: 1rem;
+    color: var(--text-secondary);
+    background-color: #ccc;
+    border-radius: 2px 2px 2px 2px;
+    border: none;
+}
+
+.title-code {
+    position: sticky;
+    left: 0;
+    height: 2px;
+    background-color: #ccc;
+    width: 100%;
+    margin-top: 22px;
+}
 .sidebar.collapsed .api-settings,
 .sidebar.collapsed .chat-history {
     display: none;

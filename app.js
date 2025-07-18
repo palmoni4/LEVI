@@ -1876,11 +1876,12 @@ class GeminiClone {
                 .replace(/"/g, '&quot;')
                 .replace(/'/g, '&#39;');
             return `<pre class="code-block">
-<div class="title-code">
-<button class="lang-code"> '${lang}' </button>
-<button class="copy-code-btn" title="העתק קוד"><span class="material-icons">content_copy</span></button>
-</div><code class="language-${lang}">${escapedCode}</code>
+            <div class="code-header">
+            <button class="copy-code-btn" title="העתק קוד"><span class="material-icons">content_copy</span></button>
+            <span class="lang-code">${lang}</span>
+            </div><code class="language-${lang}">${escapedCode}</code>
             </pre>`;
+
         });
         
         formatted = formatted.replace(/`([^`]+)`/g, '<code>$1</code>');
@@ -2034,7 +2035,7 @@ class GeminiClone {
     bindMessageActions() {
         document.querySelectorAll('.copy-code-btn').forEach(btn => {
             btn.onclick = (e) => {
-                const code = btn.closest('.title-code').nextElementSibling.innerText;
+                const code = btn.closest('.code-block').querySelector('code').innerText;
                 navigator.clipboard.writeText(code);
                 this.showToast('הקוד הועתק', 'success');
                 e.stopPropagation();
